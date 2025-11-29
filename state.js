@@ -10,8 +10,8 @@ export const state = {
                 "y": 0.6062
             },
             "wing_dragon.png": {
-                "x": 0.3605,
-                "y": 0.4169
+                "x": 0.1536,
+                "y": 0.4069
             },
             "wing_butterfly.png": {
                 "x": 0.3262,
