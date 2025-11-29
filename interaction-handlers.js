@@ -3,7 +3,8 @@ import { isOpaqueAtElement, pickUnderlyingOpaqueStageItem } from './image-utils.
 import { spawnItem, selectElement, deleteItem, STAGE } from './stage-manager.js';
 
 export function setupPaletteInteractions() {
-    interact('.palette-item').draggable({
+    // Only make items draggable if they are NOT base types
+    interact('.palette-item:not([data-type="base"])').draggable({
         inertia: true,
         listeners: {
             start(event) {

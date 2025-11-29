@@ -2,6 +2,11 @@
 const imageHitmapCache = new Map();
 
 export function processBasePony(src) {
+    // If it's one of our transparent PNGs, we don't need the chroma key logic
+    if (src.toLowerCase().endsWith('.png')) {
+        return Promise.resolve(src);
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
