@@ -4,6 +4,74 @@ import { makeInteractable } from './interaction-handlers.js';
 
 export const STAGE = document.getElementById('stage');
 
+export function updateWingCalibration(wingEl) {
+    if (!state.currentBasePonySrc) return;
+    
+    // Extract filenames for cleaner JSON keys
+    const src = wingEl.src;
+    const filename = src.substring(src.lastIndexOf('/') + 1);
+    const baseFilename = state.currentBasePonySrc.substring(state.currentBasePonySrc.lastIndexOf('/') + 1);
+
+    // Calculate center of the wing element relative to stage
+    const rect = wingEl.getBoundingClientRect();
+    const stageRect = STAGE.getBoundingClientRect();
+    
+    const centerX = rect.left + rect.width / 2 - stageRect.left;
+    const centerY = rect.top + rect.height / 2 - stageRect.top;
+
+    // Normalize coordinates against the rendered base pony image
+    const ponyImg = document.getElementById('base-pony');
+    if (!ponyImg) return;
+
+    // Stage dimensions (fixed)
+    const stageW = 700;
+    const stageH = 700;
+    
+    // Determine how the pony image is fitted in the stage
+    const naturalW = ponyImg.naturalWidth || 1000;
+    const naturalH = ponyImg.naturalHeight || 1000;
+    const naturalRatio = naturalW / naturalH;
+    const stageRatio = stageW / stageH;
+
+    let renderW, renderH, offsetX, offsetY;
+
+    if (naturalRatio > stageRatio) {
+        // Landscape fit
+        renderW = stageW;
+        renderH = stageW / naturalRatio;
+        offsetX = 0;
+        offsetY = (stageH - renderH) / 2;
+    } else {
+        // Portrait fit
+        renderH = stageH;
+        renderW = stageH * naturalRatio;
+        offsetY = 0;
+        offsetX = (stageW - renderW) / 2;
+    }
+
+    // Calculate normalized position (0.0 to 1.0) relative to the image content
+    const normX = (centerX - offsetX) / renderW;
+    const normY = (centerY - offsetY) / renderH;
+
+    // Store in state
+    if (!state.calibrationData[baseFilename]) {
+        state.calibrationData[baseFilename] = {};
+    }
+
+    state.calibrationData[baseFilename][filename] = {
+        x: Number(normX.toFixed(4)),
+        y: Number(normY.toFixed(4))
+    };
+    
+    console.log(`Updated calibration for ${baseFilename} -> ${filename}`, state.calibrationData[baseFilename][filename]);
+}
+
+export function logCalibrationData() {
+    console.log("=== WING CALIBRATION DATA ===");
+    console.log(JSON.stringify(state.calibrationData, null, 2));
+    alert("Wing calibration data logged to console.");
+}
+
 export async function replaceFirstItemOfType(type, newSrc) {
     const itemStruct = state.items.find(i => i.type === type);
     if (!itemStruct) return false;

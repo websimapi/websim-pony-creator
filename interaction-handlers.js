@@ -1,6 +1,6 @@
 import interact from 'interactjs';
 import { isOpaqueAtElement, pickUnderlyingOpaqueStageItem } from './image-utils.js';
-import { spawnItem, selectElement, deleteItem, STAGE } from './stage-manager.js';
+import { spawnItem, selectElement, deleteItem, STAGE, updateWingCalibration } from './stage-manager.js';
 
 export function setupPaletteInteractions() {
     // Only make items draggable if they are NOT base types
@@ -192,7 +192,13 @@ export function makeInteractable(el, slaveEl = null) {
 
                         if (isCenterOverlapping(dzRect, elRect)) {
                             deleteItem(event.target.dataset.id);
+                            return; // Stop here if deleted
                         }
+                    }
+
+                    // Update calibration if a wing was moved
+                    if (event.target.dataset.type === 'wing') {
+                        updateWingCalibration(event.target);
                     }
 
                     if (event.interaction.dragMeta) {

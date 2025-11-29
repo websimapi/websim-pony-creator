@@ -1,7 +1,9 @@
 export const state = {
     items: [],
     nextId: 1,
-    selectedEl: null
+    selectedEl: null,
+    currentBasePonySrc: null,
+    calibrationData: {}
 };
 
 export function getNextId() {

@@ -1,6 +1,7 @@
 import { processBasePony } from './image-utils.js';
 import { setupPaletteInteractions } from './interaction-handlers.js';
-import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE, repositionWings } from './stage-manager.js';
+import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE, repositionWings, logCalibrationData } from './stage-manager.js';
+import { state } from './state.js';
 
 // Configuration
 const BASE_PONY_SRC = '/base-pony.jpeg';
@@ -16,6 +17,7 @@ async function init() {
     const ponyImg = document.getElementById('base-pony');
 
     const loadBase = async (src) => {
+        state.currentBasePonySrc = src;
         try {
             const processedPonyUrl = await processBasePony(src);
             ponyImg.src = processedPonyUrl;
@@ -57,7 +59,7 @@ async function init() {
         item.addEventListener('click', () => {
             baseItems.forEach(i => i.style.borderColor = 'transparent');
             item.style.borderColor = 'var(--accent)';
-            loadBase(item.src);
+            loadBase(item.getAttribute('src'));
         });
     });
 
@@ -100,6 +102,11 @@ async function init() {
     document.getElementById('z-up').addEventListener('click', () => adjustZForSelected(1));
     document.getElementById('z-down').addEventListener('click', () => adjustZForSelected(-1));
     document.getElementById('flip-btn').addEventListener('click', flipSelected);
+    
+    const devBtn = document.getElementById('dev-log-btn');
+    if (devBtn) {
+        devBtn.addEventListener('click', logCalibrationData);
+    }
 }
 
 init();

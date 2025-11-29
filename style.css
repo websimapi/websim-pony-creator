@@ -16,6 +16,29 @@ body, html {
     touch-action: none; /* Prevent browser zooming/scrolling */
 }
 
+#dev-log-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+#dev-log-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
 #app {
     position: relative;
     height: 100%;
