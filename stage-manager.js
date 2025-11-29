@@ -67,8 +67,14 @@ export function updateWingCalibration(wingEl) {
 
 export function logCalibrationData() {
     console.log("=== WING CALIBRATION DATA ===");
-    console.log(JSON.stringify(state.calibrationData, null, 2));
-    alert("Wing calibration data logged to console.");
+    const data = JSON.stringify(state.calibrationData, null, 2);
+    console.log(data);
+    navigator.clipboard.writeText(data).then(() => {
+        alert("Wing calibration data copied to clipboard!");
+    }).catch(err => {
+        alert("Wing calibration data logged to console.");
+        console.error("Failed to copy to clipboard:", err);
+    });
 }
 
 export async function replaceFirstItemOfType(type, newSrc) {
