@@ -450,9 +450,24 @@ function makeInteractable(el, slaveEl = null) {
                        return;
                    }
 
+                   // record start time for hold-to-drag behavior
+                   event.interaction.dragMeta = {
+                       startTime: Date.now()
+                   };
+
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
+                    // enforce a short hold before allowing drag movement
+                    const meta = event.interaction.dragMeta;
+                    if (meta) {
+                        const elapsed = Date.now() - meta.startTime;
+                        // if the press is too fresh, don't move yet (still a tap)
+                        if (elapsed < 150) {
+                            return;
+                        }
+                    }
+
                     var target = event.target;
                     // keep the dragged position in the data-x/data-y attributes
                     var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
@@ -503,6 +518,11 @@ function makeInteractable(el, slaveEl = null) {
 
                     if (isOverlapping(dzRect, elRect)) {
                         deleteItem(event.target.dataset.id);
+                    }
+
+                    // clear drag metadata
+                    if (event.interaction.dragMeta) {
+                        event.interaction.dragMeta = null;
                     }
                 }
             }
