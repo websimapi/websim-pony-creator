@@ -10,8 +10,8 @@ export const state = {
                 "y": 0.6062
             },
             "wing_dragon.png": {
-                "x": 0.1536,
-                "y": 0.4069
+                "x": 0.3502,
+                "y": 0.4119
             },
             "wing_butterfly.png": {
                 "x": 0.3262,
@@ -22,7 +22,7 @@ export const state = {
     // Default flip settings per wing image filename
     wingFlipDefaults: {
         "wing.png": true,           // Rainbow wing should be flipped
-        "wing_dragon.png": true,    // Bat/dragon wing should be flipped
+        "wing_dragon.png": false,   // Bat/dragon wing uses its natural direction
         "wing_butterfly.png": false // Butterfly wing uses natural direction
     }
 };

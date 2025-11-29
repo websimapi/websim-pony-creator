@@ -87,6 +87,22 @@ export async function replaceFirstItemOfType(type, newSrc) {
     // Update source for all elements in this item (e.g. wing pair)
     for (const el of itemStruct.els) {
         el.src = newSrc;
+
+        // Re-apply default flip based on the new asset
+        if (type === 'wing') {
+            const shouldFlip = getWingDefaultFlip(newSrc);
+            el.dataset.flip = String(shouldFlip);
+
+            // Preserve any existing translation while updating flip
+            const x = parseFloat(el.getAttribute('data-x')) || 0;
+            const y = parseFloat(el.getAttribute('data-y')) || 0;
+
+            let transform = `translate(${x}px, ${y}px)`;
+            if (shouldFlip) {
+                transform += ' scaleX(-1)';
+            }
+            el.style.transform = transform;
+        }
     }
 
     // If this is a wing, reapply snap for the new wing asset
