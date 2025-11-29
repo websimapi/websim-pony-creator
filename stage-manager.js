@@ -88,6 +88,15 @@ export async function replaceFirstItemOfType(type, newSrc) {
     for (const el of itemStruct.els) {
         el.src = newSrc;
     }
+
+    // If this is a wing, reapply snap for the new wing asset
+    if (type === 'wing') {
+        const ponyImg = document.getElementById('base-pony');
+        if (ponyImg) {
+            await repositionWings(ponyImg.src);
+        }
+    }
+
     return true;
 }
 
@@ -238,8 +247,8 @@ function createSingleItem(id, src, type, x, y) {
 
 function createWingPair(id, src, x, y) {
     // Determine default flip per asset.
-    // Rainbow wing (wing.png) and bat/dragon wing (wing_dragon.png) should be flipped horizontally; others use natural direction.
-    const shouldFlip = src.includes('wing.png') || src.includes('wing_dragon.png');
+    // Rainbow wing (wing.png) should be flipped horizontally; others use natural direction.
+    const shouldFlip = src.includes('wing.png');
 
     const backEl = document.createElement('img');
     backEl.src = src;
