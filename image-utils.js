@@ -169,7 +169,36 @@ export function isOpaqueAtElement(el, clientX, clientY) {
     return alpha > 10;
 }
 
+export function getTopItemAt(clientX, clientY) {
+    // Get all potential candidates
+    const stageItems = Array.from(document.querySelectorAll('.stage-item'));
+    
+    // Sort by visual stacking order (Z-Index then DOM order)
+    stageItems.sort((a, b) => {
+        const zA = parseInt(window.getComputedStyle(a).zIndex) || 0;
+        const zB = parseInt(window.getComputedStyle(b).zIndex) || 0;
+        if (zA !== zB) return zA - zB;
+        // If z-index equal, later in DOM is higher
+        return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+    });
+    
+    // Iterate from Top to Bottom
+    for (let i = stageItems.length - 1; i >= 0; i--) {
+        const el = stageItems[i];
+        
+        // Skip hidden or non-interactive items if necessary
+        // (For now assuming all .stage-item are candidates)
+
+        if (isOpaqueAtElement(el, clientX, clientY)) {
+            return el;
+        }
+    }
+    return null;
+}
+
 export function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY) {
+    // Deprecated in favor of getTopItemAt for global handler, 
+    // but keeping for compatibility if needed.
     const elements = document.elementsFromPoint(clientX, clientY);
     for (const el of elements) {
         if (

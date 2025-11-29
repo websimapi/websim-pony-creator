@@ -1,6 +1,6 @@
 import interact from 'interactjs';
-import { isOpaqueAtElement, pickUnderlyingOpaqueStageItem } from './image-utils.js';
-import { spawnItem, selectElement, deleteItem, STAGE, updateWingCalibration } from './stage-manager.js';
+import { isOpaqueAtElement, getTopItemAt } from './image-utils.js';
+import { spawnItem, selectElement, deleteItem, moveItem, updateWingCalibration } from './stage-manager.js';
 
 export function setupPaletteInteractions() {
     // Only make items draggable if they are NOT base types
@@ -112,6 +112,11 @@ export function setupPaletteInteractions() {
                     // Allow dropping anywhere in the game area (above palette)
                     if (dropY < paletteRect.top) {
                         try {
+                            // Convert client coordinates to stage coordinates is handled inside spawnItem slightly,
+                            // but spawnItem expects absolute page coordinates or similar?
+                            // spawnItem logic:
+                            // const stageX = x - rect.left;
+                            // So passing clientX/clientY is correct for spawnItem as implemented.
                             await spawnItem(data.src, data.type, dropX, dropY);
                         } catch (e) {
                             console.error("Spawn failed", e);
@@ -140,194 +145,87 @@ function isCenterOverlapping(zoneRect, itemRect) {
     );
 }
 
-export function makeInteractable(el, slaveEl = null) {
+export function setupStageInteractions() {
     const DELETE_ZONE = document.getElementById('delete-zone');
 
-    // Wings should not be draggable ("snap to position rather then move anywhere")
-    const isWing = el.dataset.type === 'wing';
+    interact('#stage').draggable({
+        listeners: {
+            start(event) {
+                const clientX = event.clientX;
+                const clientY = event.clientY;
 
-    interact(el)
-        .draggable({
-            enabled: !isWing,
-            inertia: true,
-            autoScroll: true,
-            listeners: {
-                start(event) {
-                   const target = event.target;
-                   const clientX = event.clientX;
-                   const clientY = event.clientY;
-
-                   if (!isOpaqueAtElement(target, clientX, clientY)) {
-                       const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
-                       if (underlying) {
-                           selectElement(underlying);
-                           try {
-                               event.interaction.start(
-                                   {
-                                       name: 'drag',
-                                       axis: 'xy'
-                                   },
-                                   interact(underlying),
-                                   underlying
-                               );
-                           } catch (e) {
-                               console.warn('Failed to reroute drag', e);
-                               event.interaction.stop();
-                           }
-                       } else {
-                           event.interaction.stop();
-                       }
-                       return;
-                   }
-
-                   event.interaction.dragMeta = {
-                       startTime: Date.now()
-                   };
-
-                   if (DELETE_ZONE) DELETE_ZONE.classList.add('active');
-                },
-                move(event) {
-                    const meta = event.interaction.dragMeta;
-                    if (meta) {
-                        const elapsed = Date.now() - meta.startTime;
-                        if (elapsed < 150) {
-                            return;
-                        }
-                    }
-
-                    var target = event.target;
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-                    let transform = `translate(${x}px, ${y}px)`;
-                    if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
-                    }
-                    target.style.transform = transform;
-
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
-
-                    if (slaveEl) {
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
-
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
-
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
-                        if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
-                        }
-                        slaveEl.style.transform = sTransform;
-                    }
-
-                    if (DELETE_ZONE) {
-                        const dzRect = DELETE_ZONE.getBoundingClientRect();
-                        const elRect = target.getBoundingClientRect();
-
-                        if (isCenterOverlapping(dzRect, elRect)) {
-                            DELETE_ZONE.classList.add('hover');
-                        } else {
-                            DELETE_ZONE.classList.remove('hover');
-                        }
-                    }
-                },
-                end(event) {
-                    if (DELETE_ZONE) {
-                        DELETE_ZONE.classList.remove('active');
-                        DELETE_ZONE.classList.remove('hover');
-
-                        const dzRect = DELETE_ZONE.getBoundingClientRect();
-                        const elRect = event.target.getBoundingClientRect();
-
-                        if (isCenterOverlapping(dzRect, elRect)) {
-                            deleteItem(event.target.dataset.id);
-                            return; // Stop here if deleted
-                        }
-                    }
-
-                    // Update calibration if a wing was moved
-                    if (event.target.dataset.type === 'wing') {
-                        updateWingCalibration(event.target);
-                    }
-
-                    if (event.interaction.dragMeta) {
-                        event.interaction.dragMeta = null;
-                    }
+                // 1. Find the actual item under the cursor (handling transparency)
+                const targetEl = getTopItemAt(clientX, clientY);
+                
+                if (!targetEl) {
+                    // No item found, stop the drag immediately
+                    event.interaction.stop();
+                    selectElement(null);
+                    return;
                 }
-            }
-        })
-        .resizable({
-            edges: { left: true, right: true, bottom: true, top: true },
-            margin: 4,
 
-            listeners: {
-                move: function (event) {
-                    var target = event.target;
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
+                // 2. Select it
+                selectElement(targetEl);
 
-                    target.style.width = event.rect.width + 'px';
-                    target.style.height = event.rect.height + 'px';
+                // 3. Store data for move/end
+                const id = targetEl.dataset.id;
+                event.interaction.data = {
+                    id: id,
+                    targetEl: targetEl,
+                    type: targetEl.dataset.type
+                };
 
-                    x += event.deltaRect.left;
-                    y += event.deltaRect.top;
+                if (DELETE_ZONE) DELETE_ZONE.classList.add('active');
+            },
+            move(event) {
+                const data = event.interaction.data;
+                if (!data || !data.id) return;
 
-                    let transform = 'translate(' + x + 'px,' + y + 'px)';
-                    if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
-                    }
-                    target.style.transform = transform;
+                // 1. Move the item (and its pair/slaves)
+                moveItem(data.id, event.dx, event.dy);
 
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
+                // 2. Handle Delete Zone Hover
+                if (DELETE_ZONE) {
+                    const dzRect = DELETE_ZONE.getBoundingClientRect();
+                    // Check the element's new rect
+                    const elRect = data.targetEl.getBoundingClientRect();
 
-                    if (slaveEl) {
-                        slaveEl.style.width = event.rect.width + 'px';
-                        slaveEl.style.height = event.rect.height + 'px';
-
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
-
-                        sx += event.deltaRect.left;
-                        sy += event.deltaRect.top;
-
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
-
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
-                        if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
-                        }
-                        slaveEl.style.transform = sTransform;
+                    if (isCenterOverlapping(dzRect, elRect)) {
+                        DELETE_ZONE.classList.add('hover');
+                    } else {
+                        DELETE_ZONE.classList.remove('hover');
                     }
                 }
             },
-            modifiers: [
-                interact.modifiers.restrictSize({
-                    min: { width: 30, height: 30 }
-                })
-            ],
-            inertia: true
-        })
-        .on('tap', function (event) {
-            const target = event.target;
-            const clientX = event.clientX;
-            const clientY = event.clientY;
+            end(event) {
+                const data = event.interaction.data;
+                if (!data || !data.id) return;
 
-            if (!isOpaqueAtElement(target, clientX, clientY)) {
-                const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
-                if (underlying) {
-                    selectElement(underlying);
-                } else {
-                    selectElement(null);
+                if (DELETE_ZONE) {
+                    DELETE_ZONE.classList.remove('active');
+                    DELETE_ZONE.classList.remove('hover');
+
+                    const dzRect = DELETE_ZONE.getBoundingClientRect();
+                    const elRect = data.targetEl.getBoundingClientRect();
+
+                    if (isCenterOverlapping(dzRect, elRect)) {
+                        deleteItem(data.id);
+                        return;
+                    }
                 }
-                event.preventDefault();
-                return;
-            }
 
-            selectElement(target);
-            event.preventDefault();
-        });
+                // Update calibration if needed
+                if (data.type === 'wing') {
+                    updateWingCalibration(data.targetEl);
+                }
+            }
+        }
+    })
+    // Add tap listener to handle simple selection without dragging
+    .on('tap', function(event) {
+        const clientX = event.clientX;
+        const clientY = event.clientY;
+        const targetEl = getTopItemAt(clientX, clientY);
+        selectElement(targetEl);
+    });
 }

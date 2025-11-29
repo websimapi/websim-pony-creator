@@ -1,6 +1,5 @@
 import { state, getNextId, getSelectedEl, setSelectedEl } from './state.js';
 import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
-import { makeInteractable } from './interaction-handlers.js';
 
 export const STAGE = document.getElementById('stage');
 
@@ -188,6 +187,28 @@ export async function spawnItem(src, type, x, y) {
     }
 }
 
+export function moveItem(id, dx, dy) {
+    const itemStruct = state.items.find(i => i.id == id);
+    if (!itemStruct) return;
+
+    itemStruct.els.forEach(el => {
+        const currentX = parseFloat(el.getAttribute('data-x')) || 0;
+        const currentY = parseFloat(el.getAttribute('data-y')) || 0;
+        
+        const newX = currentX + dx;
+        const newY = currentY + dy;
+        
+        el.setAttribute('data-x', newX);
+        el.setAttribute('data-y', newY);
+
+        let transform = `translate(${newX}px, ${newY}px)`;
+        if (el.dataset.flip === 'true') {
+            transform += ' scaleX(-1)';
+        }
+        el.style.transform = transform;
+    });
+}
+
 function createSingleItem(id, src, type, x, y) {
     const el = document.createElement('img');
     el.src = src;
@@ -210,7 +231,6 @@ function createSingleItem(id, src, type, x, y) {
     el.style.zIndex = String(baseZ);
 
     STAGE.appendChild(el);
-    makeInteractable(el);
 
     state.items.push({ id, type, els: [el], baseZ, zOffset: 0 });
 }
@@ -266,8 +286,6 @@ function createWingPair(id, src, x, y) {
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
-
-    makeInteractable(frontEl, backEl);
 
     state.items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ: 15, zOffset: 0 });
 }

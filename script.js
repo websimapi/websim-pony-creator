@@ -1,5 +1,5 @@
 import { processBasePony } from './image-utils.js';
-import { setupPaletteInteractions } from './interaction-handlers.js';
+import { setupPaletteInteractions, setupStageInteractions } from './interaction-handlers.js';
 import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE, repositionWings, logCalibrationData } from './stage-manager.js';
 import { state } from './state.js';
 
@@ -35,6 +35,7 @@ async function init() {
 
     // Setup interactions for drag/drop items
     setupPaletteInteractions();
+    setupStageInteractions();
 
     // Setup Tabs
     const tabs = document.querySelectorAll('.tab-btn');

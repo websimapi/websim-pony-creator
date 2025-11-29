@@ -66,6 +66,7 @@ body, html {
     width: 700px; /* doubled size */
     height: 700px;
     user-select: none;
+    touch-action: none; /* Important for pointer events */
 }
 
 #base-pony {
