@@ -248,7 +248,7 @@ function createSingleItem(id, src, type, x, y) {
 function createWingPair(id, src, x, y) {
     // Determine default flip per asset.
     // Rainbow wing (wing.png) should be flipped horizontally; others use natural direction.
-    const shouldFlip = src.includes('wing.png') || src.includes('wing_dragon.png');
+    const shouldFlip = src.includes('wing.png');
 
     const backEl = document.createElement('img');
     backEl.src = src;
