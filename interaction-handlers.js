@@ -67,11 +67,16 @@ export function setupPaletteInteractions() {
     });
 }
 
-function isOverlapping(r1, r2) {
-    return !(r2.left > r1.right || 
-             r2.right < r1.left || 
-             r2.top > r1.bottom || 
-             r2.bottom < r1.top);
+function isCenterOverlapping(zoneRect, itemRect) {
+    const cx = itemRect.left + (itemRect.width / 2);
+    const cy = itemRect.top + (itemRect.height / 2);
+
+    return (
+        cx >= zoneRect.left &&
+        cx <= zoneRect.right &&
+        cy >= zoneRect.top &&
+        cy <= zoneRect.bottom
+    );
 }
 
 export function makeInteractable(el, slaveEl = null) {
@@ -156,7 +161,7 @@ export function makeInteractable(el, slaveEl = null) {
                         const dzRect = DELETE_ZONE.getBoundingClientRect();
                         const elRect = target.getBoundingClientRect();
 
-                        if (isOverlapping(dzRect, elRect)) {
+                        if (isCenterOverlapping(dzRect, elRect)) {
                             DELETE_ZONE.classList.add('hover');
                         } else {
                             DELETE_ZONE.classList.remove('hover');
@@ -171,7 +176,7 @@ export function makeInteractable(el, slaveEl = null) {
                         const dzRect = DELETE_ZONE.getBoundingClientRect();
                         const elRect = event.target.getBoundingClientRect();
 
-                        if (isOverlapping(dzRect, elRect)) {
+                        if (isCenterOverlapping(dzRect, elRect)) {
                             deleteItem(event.target.dataset.id);
                         }
                     }
