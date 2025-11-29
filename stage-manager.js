@@ -4,7 +4,7 @@ import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
 export const STAGE = document.getElementById('stage');
 
 // Helper to apply translation + rotation + scale (+ flip) to all elements of an item
-function applyItemTransform(itemStruct) {
+export function applyItemTransform(itemStruct) {
     const rotation = itemStruct.rotation || 0;
     const scale = itemStruct.scale || 1;
 
@@ -19,6 +19,11 @@ function applyItemTransform(itemStruct) {
         let transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${sx}, ${sy})`;
         el.style.transform = transform;
     });
+}
+
+// Expose core transform function for other modules (e.g. rotation handle)
+if (typeof window !== 'undefined') {
+    window._applyItemTransformCore = applyItemTransform;
 }
 
 export function updateWingCalibration(wingEl) {

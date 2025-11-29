@@ -1,7 +1,7 @@
 import interact from 'interactjs';
 import { isOpaqueAtElement, getTopItemAt } from './image-utils.js';
-import { spawnItem, selectElement, deleteItem, moveItem, updateWingCalibration } from './stage-manager.js';
-import { getWingDefaultFlip } from './state.js';
+import { spawnItem, selectElement, deleteItem, moveItem, updateWingCalibration, applyItemTransform } from './stage-manager.js';
+import { getWingDefaultFlip, state } from './state.js';
 
 export function setupPaletteInteractions() {
     // Only make items draggable if they are NOT base types
@@ -233,5 +233,53 @@ export function setupStageInteractions() {
         const clientY = event.clientY;
         const targetEl = getTopItemAt(clientX, clientY);
         selectElement(targetEl);
+    });
+
+    // Enable edge-based resizing for stage items (red edge guides)
+    interact('.stage-item').resizable({
+        // Allow grabbing any edge
+        edges: { left: true, right: true, top: true, bottom: true },
+        listeners: {
+            start(event) {
+                const target = event.target;
+                const id = target.dataset.id;
+                if (!id) return;
+
+                const rect = target.getBoundingClientRect();
+                event.interaction.data = {
+                    resizeId: id,
+                    startWidth: rect.width,
+                    startHeight: rect.height
+                };
+            },
+            move(event) {
+                const data = event.interaction.data;
+                if (!data || !data.resizeId) return;
+
+                const itemStruct = state.items.find(i => i.id == data.resizeId);
+                if (!itemStruct) return;
+
+                const newW = event.rect.width || data.startWidth;
+                const newH = event.rect.height || data.startHeight;
+
+                const scaleX = newW / data.startWidth;
+                const scaleY = newH / data.startHeight;
+                let newScale = Math.min(scaleX, scaleY);
+
+                // Clamp scale to reasonable range
+                newScale = Math.max(0.4, Math.min(2.5, newScale));
+
+                itemStruct.scale = newScale;
+                applyItemTransform(itemStruct);
+
+                // Keep selection handle in sync if present
+                if (window.updateTransformHandleForSelection && state.selectedEl) {
+                    window.updateTransformHandleForSelection(state.selectedEl);
+                }
+            },
+            end(event) {
+                // no-op for now; scale is already stored in itemStruct
+            }
+        }
     });
 }
