@@ -3,7 +3,22 @@ export const state = {
     nextId: 1,
     selectedEl: null,
     currentBasePonySrc: null,
-    calibrationData: {}
+    calibrationData: {
+        "base-pony.jpeg": {
+            "wing.png": {
+                "x": 0.3158,
+                "y": 0.6062
+            },
+            "wing_dragon.png": {
+                "x": 0.3605,
+                "y": 0.4169
+            },
+            "wing_butterfly.png": {
+                "x": 0.3262,
+                "y": 0.4543
+            }
+        }
+    }
 };
 
 export function getNextId() {

@@ -125,28 +125,24 @@ export async function repositionWings(basePonySrc) {
     const wings = state.items.filter(i => i.type === 'wing');
     if (wings.length === 0) return;
 
-    const snap = await getWingSnapDefinition(basePonySrc);
-    const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
-
-    wings.forEach(wingItem => {
-        // Position elements
-        // Wing pair logic in createWingPair puts frontEl at (x - 100, y - 100)
-        // and backEl at (x - 100 + 40, y - 100 - 20)
-        // relative to the 'center' passed.
-        
-        // We need to update positions based on new coords.x, coords.y
-        const x = coords.x;
-        const y = coords.y;
-        
+    wings.forEach(async wingItem => {
         const frontEl = wingItem.els.find(el => el.dataset.isMaster === 'true');
         const backEl = wingItem.els.find(el => el.dataset.isBack === 'true');
+        const wingElForSrc = frontEl || backEl;
+        if (!wingElForSrc) return;
+
+        const snap = await getWingSnapDefinition(basePonySrc, wingElForSrc.src);
+        const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
+
+        const x = coords.x;
+        const y = coords.y;
 
         if (frontEl) {
             const w = 200; // Hardcoded width in createWingPair
             const h = 200;
             const left = x - w / 2;
             const top = y - h / 2;
-            
+
             frontEl.style.left = left + 'px';
             frontEl.style.top = top + 'px';
             // Reset transform translation, keep flip
@@ -178,9 +174,8 @@ export async function spawnItem(src, type, x, y) {
     await prepareHitmap(src);
 
     if (type === 'wing') {
-        // Ignore passed x,y for wings, use snap
         const basePony = document.getElementById('base-pony');
-        const snap = await getWingSnapDefinition(basePony.src);
+        const snap = await getWingSnapDefinition(basePony.src, src);
         const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
         
         createWingPair(id, src, coords.x, coords.y);

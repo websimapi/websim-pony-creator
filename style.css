@@ -199,8 +199,7 @@ body, html {
 
 /* Flip the rainbow wing thumbnail so it faces the desired direction */
 .wing-rainbow {
-    /* Removed horizontal flip so thumbnail matches in-game direction */
-    /* transform: scaleX(-1); */
+    transform: scaleX(-1);
 }
 
 .palette-item:active {
