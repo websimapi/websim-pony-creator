@@ -55,7 +55,7 @@ export function setupPaletteInteractions() {
                     front.style.left = '0';
                     front.style.top = '0';
 
-                    // Match stage-manager default flip for rainbow and dragon (bat) wings
+                    // Match stage-manager default flip for rainbow wing only
                     if (src.includes('wing.png') || src.includes('wing_dragon.png')) {
                         front.style.transform = 'scaleX(-1)';
                         back.style.transform = 'scaleX(-1)';
