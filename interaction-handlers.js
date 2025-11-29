@@ -57,6 +57,8 @@ export function setupPaletteInteractions() {
 
                     // No flip by default (matching stage-manager update)
 
+                    // No flip by default (matching stage-manager update)
+
                     ghostContainer.appendChild(back);
                     ghostContainer.appendChild(front);
                 } else {
