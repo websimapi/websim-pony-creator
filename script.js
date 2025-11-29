@@ -319,55 +319,35 @@ function makeInteractable(el, slaveEl = null) {
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
-                    const target = event.target;
+                    var target = event.target;
+                    // keep the dragged position in the data-x/data-y attributes
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-                    // Current position from left/top (default to 0)
-                    let currentLeft = parseFloat(target.style.left || '0');
-                    let currentTop = parseFloat(target.style.top || '0');
-
-                    let newLeft = currentLeft + event.dx;
-                    let newTop = currentTop + event.dy;
-
-                    // Clamp within stage bounds
-                    const stageRect = STAGE.getBoundingClientRect();
-                    const maxLeft = stageRect.width - target.offsetWidth;
-                    const maxTop = stageRect.height - target.offsetHeight;
-
-                    newLeft = clamp(newLeft, 0, Math.max(0, maxLeft));
-                    newTop = clamp(newTop, 0, Math.max(0, maxTop));
-
-                    target.style.left = newLeft + 'px';
-                    target.style.top = newTop + 'px';
-
-                    // Preserve horizontal flip if needed
+                    // translate the element, preserving flip if needed
+                    let transform = `translate(${x}px, ${y}px)`;
                     if (target.dataset.flip === 'true') {
-                        target.style.transform = 'scaleX(-1)';
-                    } else {
-                        target.style.transform = '';
+                        transform += ' scaleX(-1)';
                     }
+                    target.style.transform = transform;
+
+                    // update the position attributes
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
 
                     // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        let sCurrentLeft = parseFloat(slaveEl.style.left || '0');
-                        let sCurrentTop = parseFloat(slaveEl.style.top || '0');
+                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
+                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
 
-                        let sNewLeft = sCurrentLeft + event.dx;
-                        let sNewTop = sCurrentTop + event.dy;
+                        slaveEl.setAttribute('data-x', sx);
+                        slaveEl.setAttribute('data-y', sy);
 
-                        const sMaxLeft = stageRect.width - slaveEl.offsetWidth;
-                        const sMaxTop = stageRect.height - slaveEl.offsetHeight;
-
-                        sNewLeft = clamp(sNewLeft, 0, Math.max(0, sMaxLeft));
-                        sNewTop = clamp(sNewTop, 0, Math.max(0, sMaxTop));
-
-                        slaveEl.style.left = sNewLeft + 'px';
-                        slaveEl.style.top = sNewTop + 'px';
-
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
                         if (slaveEl.dataset.flip === 'true') {
-                            slaveEl.style.transform = 'scaleX(-1)';
-                        } else {
-                            slaveEl.style.transform = '';
+                            sTransform += ' scaleX(-1)';
                         }
+                        slaveEl.style.transform = sTransform;
                     }
 
                     // Delete Zone Check
@@ -399,13 +379,11 @@ function makeInteractable(el, slaveEl = null) {
 
             listeners: {
                 move: function (event) {
-                    const target = event.target;
+                    var target = event.target;
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
 
-                    // Current position from left/top (default to 0)
-                    let x = parseFloat(target.style.left || '0');
-                    let y = parseFloat(target.style.top || '0');
-
-                    // update the element's size
+                    // update the element's style
                     target.style.width = event.rect.width + 'px';
                     target.style.height = event.rect.height + 'px';
 
@@ -413,34 +391,34 @@ function makeInteractable(el, slaveEl = null) {
                     x += event.deltaRect.left;
                     y += event.deltaRect.top;
 
-                    target.style.left = x + 'px';
-                    target.style.top = y + 'px';
-
+                    let transform = 'translate(' + x + 'px,' + y + 'px)';
                     if (target.dataset.flip === 'true') {
-                        target.style.transform = 'scaleX(-1)';
-                    } else {
-                        target.style.transform = '';
+                        transform += ' scaleX(-1)';
                     }
+                    target.style.transform = transform;
 
-                    // Resize/move slave if exists
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+
+                    // Resize slave if exists
                     if (slaveEl) {
-                        let sx = parseFloat(slaveEl.style.left || '0');
-                        let sy = parseFloat(slaveEl.style.top || '0');
-
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
+
+                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
+                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
 
                         sx += event.deltaRect.left;
                         sy += event.deltaRect.top;
 
-                        slaveEl.style.left = sx + 'px';
-                        slaveEl.style.top = sy + 'px';
+                        slaveEl.setAttribute('data-x', sx);
+                        slaveEl.setAttribute('data-y', sy);
 
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
                         if (slaveEl.dataset.flip === 'true') {
-                            slaveEl.style.transform = 'scaleX(-1)';
-                        } else {
-                            slaveEl.style.transform = '';
+                            sTransform += ' scaleX(-1)';
                         }
+                        slaveEl.style.transform = sTransform;
                     }
                 }
             },
