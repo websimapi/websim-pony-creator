@@ -388,8 +388,10 @@ function makeInteractable(el, slaveEl = null) {
             }
         })
         .resizable({
-            // resize from all edges and corners
+            // resize from a thin border around all edges
             edges: { left: true, right: true, bottom: true, top: true },
+            // only treat a few pixels at the true edge as the resize zone
+            margin: 4,
 
             listeners: {
                 move: function (event) {
