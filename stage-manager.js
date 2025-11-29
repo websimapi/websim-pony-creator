@@ -92,6 +92,22 @@ export async function replaceFirstItemOfType(type, newSrc) {
     // If this is a wing, reapply snap for the new wing asset
     if (type === 'wing') {
         const ponyImg = document.getElementById('base-pony');
+
+        // Update default flip based on newSrc for all wing elements
+        const shouldFlip = getDefaultFlipForWingSrc(newSrc);
+        itemStruct.els.forEach(el => {
+            el.dataset.flip = String(shouldFlip);
+
+            const x = parseFloat(el.getAttribute('data-x')) || 0;
+            const y = parseFloat(el.getAttribute('data-y')) || 0;
+
+            let transform = `translate(${x}px, ${y}px)`;
+            if (shouldFlip) {
+                transform += ' scaleX(-1)';
+            }
+            el.style.transform = transform;
+        });
+
         if (ponyImg) {
             await repositionWings(ponyImg.src);
         }
@@ -245,10 +261,15 @@ function createSingleItem(id, src, type, x, y) {
     state.items.push({ id, type, els: [el], baseZ, zOffset: 0 });
 }
 
+function getDefaultFlipForWingSrc(src) {
+    // Rainbow (wing.png) and bat/dragon (wing_dragon.png) should be flipped by default
+    return src.includes('wing.png') || src.includes('wing_dragon.png');
+}
+
 function createWingPair(id, src, x, y) {
     // Determine default flip per asset.
-    // Rainbow wing (wing.png) should be flipped horizontally; others use natural direction.
-    const shouldFlip = src.includes('wing.png');
+    // Rainbow wing (wing.png) and dragon wing (wing_dragon.png) should be flipped horizontally; others use natural direction.
+    const shouldFlip = getDefaultFlipForWingSrc(src);
 
     const backEl = document.createElement('img');
     backEl.src = src;
