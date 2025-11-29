@@ -243,10 +243,17 @@ function createSingleItem(id, src, type, x, y) {
     el.dataset.type = type;
     el.style.width = '160px'; // doubled size
     el.draggable = false;
+    
+    // Initialize interact state explicitly
+    el.setAttribute('data-x', 0);
+    el.setAttribute('data-y', 0);
 
     // Center the spawn
     el.style.left = (x - 80) + 'px';
     el.style.top = (y - 80) + 'px';
+    
+    // Initialize transform
+    el.style.transform = 'translate(0px, 0px)';
 
     // Base z-index for horns/marks
     const baseZ = 20;
@@ -269,6 +276,8 @@ function createWingPair(id, src, x, y) {
     backEl.dataset.type = 'wing';
     backEl.style.width = '200px';
     backEl.draggable = false;
+    backEl.setAttribute('data-x', 0);
+    backEl.setAttribute('data-y', 0);
 
     // Front Wing (In front of pony) - This is the "Handle"
     const frontEl = document.createElement('img');
@@ -280,6 +289,8 @@ function createWingPair(id, src, x, y) {
     frontEl.dataset.type = 'wing';
     frontEl.style.width = '200px';
     frontEl.draggable = false;
+    frontEl.setAttribute('data-x', 0);
+    frontEl.setAttribute('data-y', 0);
 
     // Position
     const w = 200;
@@ -296,9 +307,9 @@ function createWingPair(id, src, x, y) {
     backEl.style.left = (initLeft + 40) + 'px';
     backEl.style.top = (initTop - 20) + 'px';
 
-    // Initial visual flip before first drag
-    frontEl.style.transform = 'scaleX(-1)';
-    backEl.style.transform = 'scaleX(-1)';
+    // Initial visual flip before first drag, with explicit translate to match move logic
+    frontEl.style.transform = 'translate(0px, 0px) scaleX(-1)';
+    backEl.style.transform = 'translate(0px, 0px) scaleX(-1)';
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
