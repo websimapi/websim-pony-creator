@@ -216,10 +216,10 @@ function createSingleItem(id, src, type, x, y) {
 }
 
 function createWingPair(id, src, x, y) {
-    // Determine default flip. Standard wings are flipped by default.
-    // Dragon wings (bat wings) are specifically requested to be flipped relative to standard (i.e. not flipped).
-    const isDragon = src.includes('wing_dragon.png');
-    const shouldFlip = !isDragon;
+    // Determine default flip. 
+    // User requested "UI facing wrong way" when it was flipped.
+    // Resetting to no flip by default for all wings to match natural asset direction.
+    const shouldFlip = false;
 
     const backEl = document.createElement('img');
     backEl.src = src;

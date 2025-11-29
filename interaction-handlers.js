@@ -7,6 +7,7 @@ export function setupPaletteInteractions() {
     interact('.palette-item:not([data-type="base"])').draggable({
         inertia: true,
         startAxis: 'y',
+        lockAxis: false,
         listeners: {
             start(event) {
                 const source = event.target;
@@ -16,30 +17,66 @@ export function setupPaletteInteractions() {
                 // Determine input type to apply offset for visibility on touch
                 const pointerType = event.pointerType || 'mouse';
                 const isTouch = pointerType !== 'mouse';
-                const yOffset = isTouch ? 100 : 0;
+                const yOffset = isTouch ? 80 : 0;
 
-                const ghost = document.createElement('img');
-                ghost.src = src;
-                ghost.className = 'stage-item';
-                ghost.style.position = 'fixed';
-                ghost.style.pointerEvents = 'none';
-                ghost.style.width = '140px';
-                ghost.style.height = '140px';
-                ghost.style.left = event.clientX - 70 + 'px';
-                ghost.style.top = (event.clientY - 70 - yOffset) + 'px';
-                ghost.style.opacity = '0.9';
-                ghost.style.zIndex = '999';
+                const ghostContainer = document.createElement('div');
+                ghostContainer.className = 'stage-item'; // Re-use class for consistency
+                ghostContainer.style.position = 'fixed';
+                ghostContainer.style.pointerEvents = 'none';
+                ghostContainer.style.zIndex = '999';
+                ghostContainer.style.left = event.clientX + 'px';
+                ghostContainer.style.top = (event.clientY - yOffset) + 'px';
+                ghostContainer.style.transform = 'translate(-50%, -50%)'; // Center
+                ghostContainer.style.display = 'flex';
+                ghostContainer.style.justifyContent = 'center';
+                ghostContainer.style.alignItems = 'center';
 
                 if (type === 'wing') {
-                    ghost.style.transform = 'scaleX(-1)';
+                    // Create visual pair for dragging
+                    const w = 200;
+                    const h = 200;
+                    ghostContainer.style.width = w + 'px';
+                    ghostContainer.style.height = h + 'px';
+
+                    const back = document.createElement('img');
+                    back.src = src;
+                    back.style.position = 'absolute';
+                    back.style.width = '100%';
+                    back.style.height = '100%';
+                    back.style.left = '40px';
+                    back.style.top = '-20px';
+                    back.style.filter = 'brightness(0.8)';
+                    
+                    const front = document.createElement('img');
+                    front.src = src;
+                    front.style.position = 'absolute';
+                    front.style.width = '100%';
+                    front.style.height = '100%';
+                    front.style.left = '0';
+                    front.style.top = '0';
+
+                    // No flip by default (matching stage-manager update)
+
+                    ghostContainer.appendChild(back);
+                    ghostContainer.appendChild(front);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.style.width = '160px';
+                    img.style.height = 'auto';
+
+                    if (src.includes('horn.png')) {
+                        img.style.transform = 'scaleX(-1)';
+                    }
+                    ghostContainer.appendChild(img);
                 }
 
-                document.body.appendChild(ghost);
+                document.body.appendChild(ghostContainer);
 
                 event.interaction.data = {
                     type,
                     src,
-                    ghost,
+                    ghost: ghostContainer,
                     yOffset
                 };
             },
@@ -49,8 +86,8 @@ export function setupPaletteInteractions() {
 
                 const yOffset = data.yOffset || 0;
                 const ghost = data.ghost;
-                ghost.style.left = event.clientX - 70 + 'px';
-                ghost.style.top = (event.clientY - 70 - yOffset) + 'px';
+                ghost.style.left = event.clientX + 'px';
+                ghost.style.top = (event.clientY - yOffset) + 'px';
             },
             async end(event) {
                 const data = event.interaction.data;
@@ -62,10 +99,8 @@ export function setupPaletteInteractions() {
                     const dropY = event.clientY - yOffset;
 
                     const paletteRect = document.getElementById('palette').getBoundingClientRect();
-                    const stageRect = STAGE.getBoundingClientRect();
-
+                    
                     // Allow dropping anywhere in the game area (above palette)
-                    // We check if it's generally within the stage view vertically
                     if (dropY < paletteRect.top) {
                         await spawnItem(data.src, data.type, dropX, dropY);
                     }

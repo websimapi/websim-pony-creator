@@ -191,9 +191,9 @@ body, html {
     touch-action: pan-x !important; /* Allow horizontal scrolling */
 }
 
-/* Flip wing preview in palette so it matches the pony's facing direction */
+/* Add shadow to wings to imply a pair */
 .palette-item[data-type="wing"] {
-    transform: scaleX(-1);
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
 }
 
 .palette-item:active {
