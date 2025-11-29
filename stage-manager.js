@@ -89,12 +89,6 @@ export async function replaceFirstItemOfType(type, newSrc) {
         el.src = newSrc;
     }
 
-    // Update flip state based on asset type
-    if (type === 'wing') {
-        const shouldFlip = newSrc.includes('wing.png') || newSrc.includes('wing_dragon.png');
-        itemStruct.els.forEach(el => el.dataset.flip = String(shouldFlip));
-    }
-
     // If this is a wing, reapply snap for the new wing asset
     if (type === 'wing') {
         const ponyImg = document.getElementById('base-pony');
