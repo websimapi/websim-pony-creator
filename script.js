@@ -97,32 +97,59 @@ function processBasePony(src) {
 // Per-pixel hit-testing helpers
 // ---------------------------------------------------------
 function prepareHitmap(src) {
-    if (imageHitmapCache.has(src)) return;
+    // If we already have a completed hitmap, return immediately
+    if (imageHitmapCache.has(src) && imageHitmapCache.get(src).data) {
+        return Promise.resolve(imageHitmapCache.get(src));
+    }
 
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = src;
-    img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        imageHitmapCache.set(src, {
-            width: canvas.width,
-            height: canvas.height,
-            data: imageData.data
-        });
-    };
+    // If we're already loading this src, return the existing promise
+    if (imageHitmapCache.has(src) && imageHitmapCache.get(src).promise) {
+        return imageHitmapCache.get(src).promise;
+    }
+
+    // Otherwise, start loading and creating the hitmap
+    const promise = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = src;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const hitmap = {
+                width: canvas.width,
+                height: canvas.height,
+                data: imageData.data
+            };
+            imageHitmapCache.set(src, hitmap);
+            resolve(hitmap);
+        };
+        img.onerror = (err) => {
+            console.error('Failed to prepare hitmap for', src, err);
+            // On error, store an empty hitmap so we don't loop
+            const hitmap = { width: 0, height: 0, data: null };
+            imageHitmapCache.set(src, hitmap);
+            resolve(hitmap);
+        };
+    });
+
+    // Temporarily store the promise so subsequent calls can await it
+    imageHitmapCache.set(src, { promise });
+
+    return promise;
 }
 
 function isOpaqueAtElement(el, clientX, clientY) {
     const src = el.src;
     const hitmap = imageHitmapCache.get(src);
-    if (!hitmap) {
-        // If we don't have data yet, treat as opaque so interaction still works.
-        return true;
+
+    // If we don't have hitmap data yet, treat as transparent so clicks can pass through
+    if (!hitmap || !hitmap.data) {
+        return false;
     }
 
     const rect = el.getBoundingClientRect();
@@ -272,7 +299,7 @@ function setupPaletteInteractions() {
                 ghost.style.left = event.clientX - 70 + 'px';
                 ghost.style.top = event.clientY - 70 + 'px';
             },
-            end(event) {
+            async end(event) {
                 const data = event.interaction.data;
                 if (data && data.ghost) {
                     // Determine if dropped over stage
@@ -287,7 +314,7 @@ function setupPaletteInteractions() {
                         dropY <= stageRect.bottom
                     ) {
                         // Spawn item in stage coordinates
-                        spawnItem(data.src, data.type, dropX, dropY);
+                        await spawnItem(data.src, data.type, dropX, dropY);
                     }
 
                     // Clean up ghost
@@ -300,7 +327,7 @@ function setupPaletteInteractions() {
     });
 }
 
-function spawnItem(src, type, x, y) {
+async function spawnItem(src, type, x, y) {
     const rect = STAGE.getBoundingClientRect();
 
     // Relative position to stage
@@ -309,8 +336,8 @@ function spawnItem(src, type, x, y) {
 
     const id = nextId++;
 
-    // Ensure hitmap is prepared for this asset
-    prepareHitmap(src);
+    // Ensure hitmap is prepared for this asset before it becomes interactive
+    await prepareHitmap(src);
 
     // Create DOM elements
     if (type === 'wing') {
