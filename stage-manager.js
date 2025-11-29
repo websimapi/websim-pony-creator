@@ -1,5 +1,5 @@
 import { state, getNextId, getSelectedEl, setSelectedEl } from './state.js';
-import { prepareHitmap } from './image-utils.js';
+import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
 import { makeInteractable } from './interaction-handlers.js';
 
 export const STAGE = document.getElementById('stage');
@@ -18,21 +18,104 @@ export async function replaceFirstItemOfType(type, newSrc) {
     return true;
 }
 
+function getStageCoordinates(normX, normY, naturalRatio) {
+    // STAGE is 700x700
+    const stageW = 700;
+    const stageH = 700;
+    const stageRatio = stageW / stageH;
+    
+    // The image is fit with object-fit: contain inside the stage
+    // Determine the actual rendered dimensions of the image
+    let renderW, renderH, offsetX, offsetY;
+
+    if (naturalRatio > stageRatio) {
+        // Image is wider than stage (landscape) - fit to width
+        renderW = stageW;
+        renderH = stageW / naturalRatio;
+        offsetX = 0;
+        offsetY = (stageH - renderH) / 2;
+    } else {
+        // Image is taller than stage (portrait) - fit to height
+        renderH = stageH;
+        renderW = stageH * naturalRatio;
+        offsetY = 0;
+        offsetX = (stageW - renderW) / 2;
+    }
+
+    return {
+        x: offsetX + (normX * renderW),
+        y: offsetY + (normY * renderH)
+    };
+}
+
+export async function repositionWings(basePonySrc) {
+    const wings = state.items.filter(i => i.type === 'wing');
+    if (wings.length === 0) return;
+
+    const snap = await getWingSnapDefinition(basePonySrc);
+    const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
+
+    wings.forEach(wingItem => {
+        // Position elements
+        // Wing pair logic in createWingPair puts frontEl at (x - 100, y - 100)
+        // and backEl at (x - 100 + 40, y - 100 - 20)
+        // relative to the 'center' passed.
+        
+        // We need to update positions based on new coords.x, coords.y
+        const x = coords.x;
+        const y = coords.y;
+        
+        const frontEl = wingItem.els.find(el => el.dataset.isMaster === 'true');
+        const backEl = wingItem.els.find(el => el.dataset.isBack === 'true');
+
+        if (frontEl) {
+            const w = 200; // Hardcoded width in createWingPair
+            const h = 200;
+            const left = x - w / 2;
+            const top = y - h / 2;
+            
+            frontEl.style.left = left + 'px';
+            frontEl.style.top = top + 'px';
+            // Reset transform translation, keep flip
+            const flip = frontEl.dataset.flip === 'true' ? ' scaleX(-1)' : '';
+            frontEl.style.transform = flip;
+            frontEl.setAttribute('data-x', 0);
+            frontEl.setAttribute('data-y', 0);
+        }
+
+        if (backEl) {
+            const w = 200;
+            const h = 200;
+            const left = x - w / 2 + 40;
+            const top = y - h / 2 - 20;
+
+            backEl.style.left = left + 'px';
+            backEl.style.top = top + 'px';
+            const flip = backEl.dataset.flip === 'true' ? ' scaleX(-1)' : '';
+            backEl.style.transform = flip;
+            backEl.setAttribute('data-x', 0);
+            backEl.setAttribute('data-y', 0);
+        }
+    });
+}
+
 export async function spawnItem(src, type, x, y) {
-    const rect = STAGE.getBoundingClientRect();
-
-    // Relative position to stage
-    const stageX = x - rect.left;
-    const stageY = y - rect.top;
-
     const id = getNextId();
-
     // Ensure hitmap is prepared
     await prepareHitmap(src);
 
     if (type === 'wing') {
-        createWingPair(id, src, stageX, stageY);
+        // Ignore passed x,y for wings, use snap
+        const basePony = document.getElementById('base-pony');
+        const snap = await getWingSnapDefinition(basePony.src);
+        const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
+        
+        createWingPair(id, src, coords.x, coords.y);
     } else {
+        const rect = STAGE.getBoundingClientRect();
+        // Relative position to stage
+        const stageX = x - rect.left;
+        const stageY = y - rect.top;
         createSingleItem(id, src, type, stageX, stageY);
     }
 }

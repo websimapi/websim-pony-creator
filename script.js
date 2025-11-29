@@ -1,6 +1,6 @@
 import { processBasePony } from './image-utils.js';
 import { setupPaletteInteractions } from './interaction-handlers.js';
-import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE } from './stage-manager.js';
+import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE, repositionWings } from './stage-manager.js';
 
 // Configuration
 const BASE_PONY_SRC = '/base-pony.jpeg';
@@ -19,9 +19,12 @@ async function init() {
         try {
             const processedPonyUrl = await processBasePony(src);
             ponyImg.src = processedPonyUrl;
+            // Recalculate wing positions for new base
+            await repositionWings(processedPonyUrl);
         } catch (e) {
             console.error('Pony processing failed, using original image:', e);
             ponyImg.src = src;
+            await repositionWings(src);
         }
     };
 

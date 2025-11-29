@@ -92,8 +92,12 @@ function isCenterOverlapping(zoneRect, itemRect) {
 export function makeInteractable(el, slaveEl = null) {
     const DELETE_ZONE = document.getElementById('delete-zone');
 
+    // Wings should not be draggable ("snap to position rather then move anywhere")
+    const isWing = el.dataset.type === 'wing';
+
     interact(el)
         .draggable({
+            enabled: !isWing,
             inertia: true,
             autoScroll: true,
             listeners: {

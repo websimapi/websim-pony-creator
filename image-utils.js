@@ -90,6 +90,54 @@ export function prepareHitmap(src) {
     return promise;
 }
 
+export async function getWingSnapDefinition(src) {
+    const hitmap = await prepareHitmap(src);
+    if (!hitmap || !hitmap.data || hitmap.width === 0) {
+        return { x: 0.5, y: 0.5, ratio: 1 };
+    }
+
+    const cx = Math.floor(hitmap.width / 2);
+    let topY = -1;
+    let bottomY = -1;
+
+    // Scan down center column to find body height
+    // "detect center from top down till solid pixel"
+    for (let y = 0; y < hitmap.height; y++) {
+        const idx = (y * hitmap.width + cx) * 4 + 3; // Alpha channel
+        const alpha = hitmap.data[idx];
+
+        if (alpha > 20) {
+            if (topY === -1) topY = y;
+            bottomY = y; // Keep updating bottom as long as we find solid pixels
+        } else if (topY !== -1) {
+            // We found the body, now we hit transparency again.
+            // Check if we should stop or if it's a small gap.
+            // For simple pony shapes, the first gap usually defines the body main mass.
+            break;
+        }
+    }
+
+    if (topY === -1 || bottomY === -1) {
+        return { x: 0.5, y: 0.5, ratio: hitmap.width / hitmap.height };
+    }
+
+    const bodyHeight = bottomY - topY;
+
+    // "go 1/6 to left"
+    // Assuming 1/6 of bodyHeight to the left of center
+    const targetXPixel = cx - (bodyHeight / 6);
+
+    // "and 1/4 body side down"
+    // 1/4 of bodyHeight down from the top edge
+    const targetYPixel = topY + (bodyHeight / 4);
+
+    return {
+        x: targetXPixel / hitmap.width,
+        y: targetYPixel / hitmap.height,
+        ratio: hitmap.width / hitmap.height
+    };
+}
+
 export function isOpaqueAtElement(el, clientX, clientY) {
     const src = el.src;
     const hitmap = imageHitmapCache.get(src);
