@@ -319,6 +319,16 @@ function createWingPair(id, src, x, y) {
 }
 
 function makeInteractable(el, slaveEl = null) {
+    // Precompute offset between master and slave (for wing pairs)
+    if (slaveEl) {
+        const masterLeft = parseFloat(el.style.left) || 0;
+        const masterTop = parseFloat(el.style.top) || 0;
+        const slaveLeft = parseFloat(slaveEl.style.left) || 0;
+        const slaveTop = parseFloat(slaveEl.style.top) || 0;
+        el.dataset.slaveOffsetX = slaveLeft - masterLeft;
+        el.dataset.slaveOffsetY = slaveTop - masterTop;
+    }
+
     interact(el)
         .draggable({
             inertia: true,
@@ -331,42 +341,29 @@ function makeInteractable(el, slaveEl = null) {
             autoScroll: true,
             listeners: {
                 start(event) {
-                    DELETE_ZONE.classList.add('active');
+                   DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
                     const target = event.target;
 
-                    // Move main element using left/top
-                    const currentLeft = parseFloat(target.style.left) || 0;
-                    const currentTop = parseFloat(target.style.top) || 0;
-                    const newLeft = currentLeft + event.dx;
-                    const newTop = currentTop + event.dy;
+                    // Current absolute position
+                    let left = parseFloat(target.style.left) || 0;
+                    let top = parseFloat(target.style.top) || 0;
 
-                    target.style.left = newLeft + 'px';
-                    target.style.top = newTop + 'px';
+                    // Apply deltas
+                    left += event.dx;
+                    top += event.dy;
 
-                    // Preserve flip state
-                    if (target.dataset.flip === 'true') {
-                        target.style.transform = 'scaleX(-1)';
-                    } else {
-                        target.style.transform = '';
-                    }
+                    // Update position
+                    target.style.left = left + 'px';
+                    target.style.top = top + 'px';
 
-                    // If there's a slave element (like back wing), move it too
+                    // Move slave element if present (keep stored offset)
                     if (slaveEl) {
-                        const sCurrentLeft = parseFloat(slaveEl.style.left) || 0;
-                        const sCurrentTop = parseFloat(slaveEl.style.top) || 0;
-                        const sNewLeft = sCurrentLeft + event.dx;
-                        const sNewTop = sCurrentTop + event.dy;
-
-                        slaveEl.style.left = sNewLeft + 'px';
-                        slaveEl.style.top = sNewTop + 'px';
-
-                        if (slaveEl.dataset.flip === 'true') {
-                            slaveEl.style.transform = 'scaleX(-1)';
-                        } else {
-                            slaveEl.style.transform = '';
-                        }
+                        const offX = parseFloat(target.dataset.slaveOffsetX) || 0;
+                        const offY = parseFloat(target.dataset.slaveOffsetY) || 0;
+                        slaveEl.style.left = (left + offX) + 'px';
+                        slaveEl.style.top = (top + offY) + 'px';
                     }
 
                     // Delete Zone Check
@@ -400,46 +397,30 @@ function makeInteractable(el, slaveEl = null) {
                 move: function (event) {
                     const target = event.target;
 
-                    // Current left/top
-                    let x = parseFloat(target.style.left) || 0;
-                    let y = parseFloat(target.style.top) || 0;
+                    let left = parseFloat(target.style.left) || 0;
+                    let top = parseFloat(target.style.top) || 0;
 
                     // update the element's size
                     target.style.width = event.rect.width + 'px';
                     target.style.height = event.rect.height + 'px';
 
-                    // move when resizing from top or left edges
-                    x += event.deltaRect.left;
-                    y += event.deltaRect.top;
+                    // adjust position when resizing from top or left
+                    left += event.deltaRect.left;
+                    top += event.deltaRect.top;
 
-                    target.style.left = x + 'px';
-                    target.style.top = y + 'px';
-
-                    if (target.dataset.flip === 'true') {
-                        target.style.transform = 'scaleX(-1)';
-                    } else {
-                        target.style.transform = '';
-                    }
+                    target.style.left = left + 'px';
+                    target.style.top = top + 'px';
 
                     // Resize/move slave if exists
                     if (slaveEl) {
-                        let sx = parseFloat(slaveEl.style.left) || 0;
-                        let sy = parseFloat(slaveEl.style.top) || 0;
+                        const offX = parseFloat(target.dataset.slaveOffsetX) || 0;
+                        const offY = parseFloat(target.dataset.slaveOffsetY) || 0;
 
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
 
-                        sx += event.deltaRect.left;
-                        sy += event.deltaRect.top;
-
-                        slaveEl.style.left = sx + 'px';
-                        slaveEl.style.top = sy + 'px';
-
-                        if (slaveEl.dataset.flip === 'true') {
-                            slaveEl.style.transform = 'scaleX(-1)';
-                        } else {
-                            slaveEl.style.transform = '';
-                        }
+                        slaveEl.style.left = (left + offX) + 'px';
+                        slaveEl.style.top = (top + offY) + 'px';
                     }
                 }
             },
