@@ -331,38 +331,42 @@ function makeInteractable(el, slaveEl = null) {
             autoScroll: true,
             listeners: {
                 start(event) {
-                   DELETE_ZONE.classList.add('active');
+                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
-                    var target = event.target;
-                    // keep the dragged position in the data-x/data-y attributes
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                    const target = event.target;
 
-                    // translate the element, preserving flip if needed
-                    let transform = `translate(${x}px, ${y}px)`;
+                    // Move main element using left/top
+                    const currentLeft = parseFloat(target.style.left) || 0;
+                    const currentTop = parseFloat(target.style.top) || 0;
+                    const newLeft = currentLeft + event.dx;
+                    const newTop = currentTop + event.dy;
+
+                    target.style.left = newLeft + 'px';
+                    target.style.top = newTop + 'px';
+
+                    // Preserve flip state
                     if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
+                        target.style.transform = 'scaleX(-1)';
+                    } else {
+                        target.style.transform = '';
                     }
-                    target.style.transform = transform;
-
-                    // update the position attributes
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
 
                     // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
+                        const sCurrentLeft = parseFloat(slaveEl.style.left) || 0;
+                        const sCurrentTop = parseFloat(slaveEl.style.top) || 0;
+                        const sNewLeft = sCurrentLeft + event.dx;
+                        const sNewTop = sCurrentTop + event.dy;
 
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
+                        slaveEl.style.left = sNewLeft + 'px';
+                        slaveEl.style.top = sNewTop + 'px';
 
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
                         if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
+                            slaveEl.style.transform = 'scaleX(-1)';
+                        } else {
+                            slaveEl.style.transform = '';
                         }
-                        slaveEl.style.transform = sTransform;
                     }
 
                     // Delete Zone Check
@@ -394,46 +398,48 @@ function makeInteractable(el, slaveEl = null) {
 
             listeners: {
                 move: function (event) {
-                    var target = event.target;
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
+                    const target = event.target;
 
-                    // update the element's style
+                    // Current left/top
+                    let x = parseFloat(target.style.left) || 0;
+                    let y = parseFloat(target.style.top) || 0;
+
+                    // update the element's size
                     target.style.width = event.rect.width + 'px';
                     target.style.height = event.rect.height + 'px';
 
-                    // translate when resizing from top or left edges
+                    // move when resizing from top or left edges
                     x += event.deltaRect.left;
                     y += event.deltaRect.top;
 
-                    let transform = 'translate(' + x + 'px,' + y + 'px)';
+                    target.style.left = x + 'px';
+                    target.style.top = y + 'px';
+
                     if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
+                        target.style.transform = 'scaleX(-1)';
+                    } else {
+                        target.style.transform = '';
                     }
-                    target.style.transform = transform;
 
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
-
-                    // Resize slave if exists
+                    // Resize/move slave if exists
                     if (slaveEl) {
+                        let sx = parseFloat(slaveEl.style.left) || 0;
+                        let sy = parseFloat(slaveEl.style.top) || 0;
+
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
-
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
 
                         sx += event.deltaRect.left;
                         sy += event.deltaRect.top;
 
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
+                        slaveEl.style.left = sx + 'px';
+                        slaveEl.style.top = sy + 'px';
 
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
                         if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
+                            slaveEl.style.transform = 'scaleX(-1)';
+                        } else {
+                            slaveEl.style.transform = '';
                         }
-                        slaveEl.style.transform = sTransform;
                     }
                 }
             },
