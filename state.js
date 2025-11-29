@@ -17,6 +17,20 @@ export const state = {
                 "x": 0.3262,
                 "y": 0.4543
             }
+        },
+        "base_pony_white.png": {
+            "wing.png": {
+                "x": 0.2959,
+                "y": 0.6011
+            },
+            "wing_dragon.png": {
+                "x": 0.3354,
+                "y": 0.3696
+            },
+            "wing_butterfly.png": {
+                "x": 0.3312,
+                "y": 0.4173
+            }
         }
     },
     // Default flip settings per wing image filename
