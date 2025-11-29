@@ -22,7 +22,7 @@ export const state = {
     // Default flip settings per wing image filename
     wingFlipDefaults: {
         "wing.png": true,           // Rainbow wing should be flipped
-        "wing_dragon.png": false,   // Bat/dragon wing uses natural direction
+        "wing_dragon.png": true,    // Bat/dragon wing should be flipped
         "wing_butterfly.png": false // Butterfly wing uses natural direction
     }
 };
