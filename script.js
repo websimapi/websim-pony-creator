@@ -177,7 +177,8 @@ function isOpaqueAtElement(el, clientX, clientY) {
     return alpha > 10;
 }
 
-function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY) {
+function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY, options = {}) {
+    const { allowWings = true } = options;
     const elements = document.elementsFromPoint(clientX, clientY);
     for (const el of elements) {
         if (
@@ -185,6 +186,11 @@ function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY) {
             el.classList &&
             el.classList.contains('stage-item')
         ) {
+            // Optionally skip all wings when redirecting
+            if (!allowWings && el.dataset.type === 'wing') {
+                continue;
+            }
+
             // Never pick the back wing directly
             if (el.dataset.type === 'wing' && el.dataset.isBack === 'true') {
                 continue;
@@ -449,7 +455,9 @@ function makeInteractable(el, slaveEl = null) {
 
                    // If we started on a transparent pixel, try to redirect the drag
                    if (!isOpaqueAtElement(dragTarget, clientX, clientY)) {
-                       const underlying = pickUnderlyingOpaqueStageItem(dragTarget, clientX, clientY);
+                       // Only allow redirecting onto wings if the original target is a wing
+                       const allowWings = dragTarget.dataset.type === 'wing';
+                       const underlying = pickUnderlyingOpaqueStageItem(dragTarget, clientX, clientY, { allowWings });
                        if (underlying) {
                            dragTarget = underlying;
                        } else {
