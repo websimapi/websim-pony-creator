@@ -183,10 +183,16 @@ function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY) {
         if (
             el !== excludeEl &&
             el.classList &&
-            el.classList.contains('stage-item') &&
-            isOpaqueAtElement(el, clientX, clientY)
+            el.classList.contains('stage-item')
         ) {
-            return el;
+            // Never pick the back wing directly
+            if (el.dataset.type === 'wing' && el.dataset.isBack === 'true') {
+                continue;
+            }
+
+            if (isOpaqueAtElement(el, clientX, clientY)) {
+                return el;
+            }
         }
     }
     return null;
@@ -435,58 +441,57 @@ function makeInteractable(el, slaveEl = null) {
             autoScroll: true,
             listeners: {
                 start(event) {
-                   const target = event.target;
                    const clientX = event.clientX;
                    const clientY = event.clientY;
 
+                   // decide which element this drag should actually control
+                   let dragTarget = event.target;
+
                    // If we started on a transparent pixel, try to redirect the drag
-                   if (!isOpaqueAtElement(target, clientX, clientY)) {
-                       const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
+                   if (!isOpaqueAtElement(dragTarget, clientX, clientY)) {
+                       const underlying = pickUnderlyingOpaqueStageItem(dragTarget, clientX, clientY);
                        if (underlying) {
-                           // Select the underlying element
-                           selectElement(underlying);
-                           // Re-route this interaction to the underlying element so drag continues
-                           try {
-                               event.interaction.start(
-                                   {
-                                       name: 'drag',
-                                       axis: 'xy'
-                                   },
-                                   event.interaction.interactable, // same interactable config
-                                   underlying
-                               );
-                           } catch (e) {
-                               // If rerouting fails, just fall through and stop the drag
-                               console.warn('Failed to reroute drag to underlying element', e);
-                               event.interaction.stop();
-                           }
+                           dragTarget = underlying;
                        } else {
                            // No opaque asset underneath; let the interaction end
                            event.interaction.stop();
+                           return;
                        }
-                       return;
                    }
 
-                   // record start time for hold-to-drag behavior
+                   // If the drag target is a back wing, reroute to its master/front wing
+                   if (dragTarget.dataset.type === 'wing' && dragTarget.dataset.isBack === 'true') {
+                       const id = dragTarget.dataset.id;
+                       const itemStruct = items.find(i => i.id == id);
+                       if (itemStruct) {
+                           const master = itemStruct.els.find(e => e.dataset.isMaster === 'true') || dragTarget;
+                           dragTarget = master;
+                       }
+                   }
+
+                   // record start time and chosen drag target for this interaction
                    event.interaction.dragMeta = {
-                       startTime: Date.now()
+                       startTime: Date.now(),
+                       dragTarget
                    };
 
+                   selectElement(dragTarget);
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
-                    // enforce a short hold before allowing drag movement
                     const meta = event.interaction.dragMeta;
-                    if (meta) {
-                        const elapsed = Date.now() - meta.startTime;
-                        // if the press is too fresh, don't move yet (still a tap)
-                        if (elapsed < 150) {
-                            return;
-                        }
+                    if (!meta) {
+                        return;
                     }
 
-                    var target = event.target;
-                    // keep the dragged position in the data-x/data-y attributes
+                    // enforce a short hold before allowing drag movement
+                    const elapsed = Date.now() - meta.startTime;
+                    if (elapsed < 150) {
+                        return;
+                    }
+
+                    const target = meta.dragTarget;
+
                     var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
                     var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
@@ -527,14 +532,17 @@ function makeInteractable(el, slaveEl = null) {
                     }
                 },
                 end(event) {
+                    const meta = event.interaction.dragMeta;
+                    const target = meta && meta.dragTarget ? meta.dragTarget : event.target;
+
                     DELETE_ZONE.classList.remove('active');
                     DELETE_ZONE.classList.remove('hover');
 
                     const dzRect = DELETE_ZONE.getBoundingClientRect();
-                    const elRect = event.target.getBoundingClientRect();
+                    const elRect = target.getBoundingClientRect();
 
                     if (isOverlapping(dzRect, elRect)) {
-                        deleteItem(event.target.dataset.id);
+                        deleteItem(target.dataset.id);
                     }
 
                     // clear drag metadata
@@ -612,7 +620,19 @@ function makeInteractable(el, slaveEl = null) {
             if (!isOpaqueAtElement(target, clientX, clientY)) {
                 const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
                 if (underlying) {
-                    selectElement(underlying);
+                    // never make the back wing the selected element directly
+                    if (underlying.dataset.type === 'wing' && underlying.dataset.isBack === 'true') {
+                        const id = underlying.dataset.id;
+                        const itemStruct = items.find(i => i.id == id);
+                        if (itemStruct) {
+                            const master = itemStruct.els.find(e => e.dataset.isMaster === 'true') || underlying;
+                            selectElement(master);
+                        } else {
+                            selectElement(null);
+                        }
+                    } else {
+                        selectElement(underlying);
+                    }
                 } else {
                     // clear selection if nothing opaque underneath
                     selectElement(null);
@@ -621,7 +641,19 @@ function makeInteractable(el, slaveEl = null) {
                 return;
             }
 
-            selectElement(target);
+            // If user taps directly on a back wing, select its master/front wing instead
+            if (target.dataset.type === 'wing' && target.dataset.isBack === 'true') {
+                const id = target.dataset.id;
+                const itemStruct = items.find(i => i.id == id);
+                if (itemStruct) {
+                    const master = itemStruct.els.find(e => e.dataset.isMaster === 'true') || target;
+                    selectElement(master);
+                } else {
+                    selectElement(null);
+                }
+            } else {
+                selectElement(target);
+            }
             event.preventDefault();
         });
 }
