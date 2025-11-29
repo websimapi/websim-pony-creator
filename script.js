@@ -15,10 +15,17 @@ let nextId = 1;
 
 // Initialize
 async function init() {
-    // 1. Process Base Pony to remove background
-    const processedPonyUrl = await processBasePony(BASE_PONY_SRC);
     const ponyImg = document.getElementById('base-pony');
-    ponyImg.src = processedPonyUrl;
+
+    try {
+        // 1. Process Base Pony to remove background
+        const processedPonyUrl = await processBasePony(BASE_PONY_SRC);
+        ponyImg.src = processedPonyUrl;
+    } catch (e) {
+        // Fallback: if processing fails for any reason, show the original pony image
+        console.error('Pony processing failed, using original image:', e);
+        ponyImg.src = BASE_PONY_SRC;
+    }
 
     // 2. Setup Palette Dragging
     setupPaletteInteractions();
