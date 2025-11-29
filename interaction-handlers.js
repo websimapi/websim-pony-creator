@@ -173,19 +173,36 @@ export function setupStageInteractions() {
                 // 2. Select it
                 selectElement(targetEl);
 
-                // 3. Store data for move/end
+                // 3. Store data for move/end, with drag threshold state
                 const id = targetEl.dataset.id;
                 event.interaction.data = {
                     id: id,
                     targetEl: targetEl,
-                    type: targetEl.dataset.type
+                    type: targetEl.dataset.type,
+                    startX: clientX,
+                    startY: clientY,
+                    dragStarted: false
                 };
-
-                if (DELETE_ZONE) DELETE_ZONE.classList.add('active');
             },
             move(event) {
                 const data = event.interaction.data;
                 if (!data || !data.id) return;
+
+                const THRESHOLD = 8; // pixels
+
+                // If drag hasn't officially started yet, check if we've moved enough
+                if (!data.dragStarted) {
+                    const totalDx = event.clientX - data.startX;
+                    const totalDy = event.clientY - data.startY;
+                    const dist = Math.hypot(totalDx, totalDy);
+                    if (dist < THRESHOLD) {
+                        // Ignore tiny movements to keep taps clean
+                        return;
+                    }
+                    // Now we consider this a real drag
+                    data.dragStarted = true;
+                    if (DELETE_ZONE) DELETE_ZONE.classList.add('active');
+                }
 
                 // 1. Move the item (and its pair/slaves)
                 moveItem(data.id, event.dx, event.dy);
@@ -206,6 +223,15 @@ export function setupStageInteractions() {
             end(event) {
                 const data = event.interaction.data;
                 if (!data || !data.id) return;
+
+                // If we never passed the threshold, treat this as just a tap/selection
+                if (!data.dragStarted) {
+                    if (DELETE_ZONE) {
+                        DELETE_ZONE.classList.remove('active');
+                        DELETE_ZONE.classList.remove('hover');
+                    }
+                    return;
+                }
 
                 if (DELETE_ZONE) {
                     DELETE_ZONE.classList.remove('active');
