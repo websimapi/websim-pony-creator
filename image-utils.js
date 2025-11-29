@@ -98,7 +98,16 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
         return { x: 0.5, y: 0.5, ratio: 1 };
     }
 
-    const baseFilename = basePonySrc.substring(basePonySrc.lastIndexOf('/') + 1);
+    // Resolve the correct base filename for calibration, even if basePonySrc is a data URL
+    let baseFilename;
+    if (basePonySrc.startsWith('data:') && state.currentBasePonySrc) {
+        baseFilename = state.currentBasePonySrc.substring(
+            state.currentBasePonySrc.lastIndexOf('/') + 1
+        );
+    } else {
+        baseFilename = basePonySrc.substring(basePonySrc.lastIndexOf('/') + 1);
+    }
+
     const wingFilename = wingSrc
         ? wingSrc.substring(wingSrc.lastIndexOf('/') + 1)
         : null;
