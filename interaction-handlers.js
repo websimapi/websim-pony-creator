@@ -83,6 +83,9 @@ export function setupPaletteInteractions() {
             move(event) {
                 const data = event.interaction.data;
                 if (!data || !data.ghost) return;
+                
+                // Flag as dragging to prevent click handler
+                event.target.dataset.isDragging = 'true';
 
                 const yOffset = data.yOffset || 0;
                 const ghost = data.ghost;
@@ -91,6 +94,9 @@ export function setupPaletteInteractions() {
             },
             async end(event) {
                 const data = event.interaction.data;
+                // Clear immediately to prevent race condition with next start()
+                event.interaction.data = null;
+
                 if (data && data.ghost) {
                     const yOffset = data.yOffset || 0;
                     
@@ -100,13 +106,23 @@ export function setupPaletteInteractions() {
 
                     const paletteRect = document.getElementById('palette').getBoundingClientRect();
                     
+                    // Remove ghost immediately
+                    data.ghost.remove();
+
                     // Allow dropping anywhere in the game area (above palette)
                     if (dropY < paletteRect.top) {
-                        await spawnItem(data.src, data.type, dropX, dropY);
+                        try {
+                            await spawnItem(data.src, data.type, dropX, dropY);
+                        } catch (e) {
+                            console.error("Spawn failed", e);
+                        }
                     }
-                    data.ghost.remove();
                 }
-                event.interaction.data = null;
+
+                // Clear drag flag after a short delay
+                setTimeout(() => {
+                    if (event.target) delete event.target.dataset.isDragging;
+                }, 50);
             }
         }
     });

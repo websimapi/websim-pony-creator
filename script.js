@@ -67,6 +67,8 @@ async function init() {
     const accessoryItems = document.querySelectorAll('.palette-item:not([data-type="base"])');
     accessoryItems.forEach(item => {
         item.addEventListener('click', async () => {
+            if (item.dataset.isDragging) return;
+
             const type = item.dataset.type;
             const src = item.src;
             
