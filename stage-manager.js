@@ -242,10 +242,9 @@ function createSingleItem(id, src, type, x, y) {
 }
 
 function createWingPair(id, src, x, y) {
-    // Determine default flip. 
-    // User requested "UI facing wrong way" when it was flipped.
-    // Resetting to no flip by default for all wings to match natural asset direction.
-    const shouldFlip = false;
+    // Determine default flip per asset.
+    // Rainbow wing (wing.png) should be flipped horizontally; others use natural direction.
+    const shouldFlip = src.includes('wing.png');
 
     const backEl = document.createElement('img');
     backEl.src = src;

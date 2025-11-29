@@ -55,9 +55,11 @@ export function setupPaletteInteractions() {
                     front.style.left = '0';
                     front.style.top = '0';
 
-                    // No flip by default (matching stage-manager update)
-
-                    // No flip by default (matching stage-manager update)
+                    // Match stage-manager default flip for rainbow wing
+                    if (src.includes('wing.png')) {
+                        front.style.transform = 'scaleX(-1)';
+                        back.style.transform = 'scaleX(-1)';
+                    }
 
                     ghostContainer.appendChild(back);
                     ghostContainer.appendChild(front);

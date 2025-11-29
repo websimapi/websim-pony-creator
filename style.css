@@ -197,6 +197,11 @@ body, html {
     filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
 }
 
+/* Flip the rainbow wing thumbnail so it faces the desired direction */
+.wing-rainbow {
+    transform: scaleX(-1);
+}
+
 .palette-item:active {
     transform: scale(0.95);
     border-color: var(--accent);
