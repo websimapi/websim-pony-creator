@@ -322,11 +322,19 @@ function makeInteractable(el, slaveEl = null) {
                     const target = event.target;
 
                     // Current position from left/top (default to 0)
-                    const currentLeft = parseFloat(target.style.left || '0');
-                    const currentTop = parseFloat(target.style.top || '0');
+                    let currentLeft = parseFloat(target.style.left || '0');
+                    let currentTop = parseFloat(target.style.top || '0');
 
-                    const newLeft = currentLeft + event.dx;
-                    const newTop = currentTop + event.dy;
+                    let newLeft = currentLeft + event.dx;
+                    let newTop = currentTop + event.dy;
+
+                    // Clamp within stage bounds
+                    const stageRect = STAGE.getBoundingClientRect();
+                    const maxLeft = stageRect.width - target.offsetWidth;
+                    const maxTop = stageRect.height - target.offsetHeight;
+
+                    newLeft = clamp(newLeft, 0, Math.max(0, maxLeft));
+                    newTop = clamp(newTop, 0, Math.max(0, maxTop));
 
                     target.style.left = newLeft + 'px';
                     target.style.top = newTop + 'px';
@@ -340,11 +348,17 @@ function makeInteractable(el, slaveEl = null) {
 
                     // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        const sCurrentLeft = parseFloat(slaveEl.style.left || '0');
-                        const sCurrentTop = parseFloat(slaveEl.style.top || '0');
+                        let sCurrentLeft = parseFloat(slaveEl.style.left || '0');
+                        let sCurrentTop = parseFloat(slaveEl.style.top || '0');
 
-                        const sNewLeft = sCurrentLeft + event.dx;
-                        const sNewTop = sCurrentTop + event.dy;
+                        let sNewLeft = sCurrentLeft + event.dx;
+                        let sNewTop = sCurrentTop + event.dy;
+
+                        const sMaxLeft = stageRect.width - slaveEl.offsetWidth;
+                        const sMaxTop = stageRect.height - slaveEl.offsetHeight;
+
+                        sNewLeft = clamp(sNewLeft, 0, Math.max(0, sMaxLeft));
+                        sNewTop = clamp(sNewTop, 0, Math.max(0, sMaxTop));
 
                         slaveEl.style.left = sNewLeft + 'px';
                         slaveEl.style.top = sNewTop + 'px';
