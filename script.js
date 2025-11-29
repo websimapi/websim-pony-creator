@@ -16,6 +16,125 @@ document.getElementById('stage-container').appendChild(DELETE_ZONE);
 async function init() {
     const ponyImg = document.getElementById('base-pony');
 
+    // Create a single transform handle used for rotation/scale of the selected element
+    const transformHandle = document.createElement('div');
+    transformHandle.id = 'transform-handle';
+    transformHandle.style.position = 'absolute';
+    transformHandle.style.width = '32px';
+    transformHandle.style.height = '32px';
+    transformHandle.style.borderRadius = '50%';
+    transformHandle.style.background = 'rgba(255,255,255,0.9)';
+    transformHandle.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+    transformHandle.style.display = 'none';
+    transformHandle.style.justifyContent = 'center';
+    transformHandle.style.alignItems = 'center';
+    transformHandle.style.fontSize = '18px';
+    transformHandle.style.cursor = 'grab';
+    transformHandle.style.touchAction = 'none';
+    transformHandle.textContent = '⟳';
+    document.getElementById('stage-container').appendChild(transformHandle);
+
+    let handleState = {
+        active: false,
+        itemId: null,
+        startAngle: 0,
+        startRotation: 0,
+        startDist: 0,
+        startScale: 1,
+        centerX: 0,
+        centerY: 0
+    };
+
+    function positionHandleForElement(el) {
+        if (!el) {
+            transformHandle.style.display = 'none';
+            return;
+        }
+        const rect = el.getBoundingClientRect();
+        const stageRect = STAGE.getBoundingClientRect();
+        const handleSize = 32;
+        const left = rect.right - stageRect.left - handleSize / 2;
+        const top = rect.top - stageRect.top - handleSize / 2;
+        transformHandle.style.left = `${left}px`;
+        transformHandle.style.top = `${top}px`;
+        transformHandle.style.display = 'flex';
+    }
+
+    window.updateTransformHandleForSelection = function(el) {
+        positionHandleForElement(el);
+    };
+
+    transformHandle.addEventListener('pointerdown', (e) => {
+        const selectedEl = state.selectedEl;
+        if (!selectedEl) return;
+        const itemId = selectedEl.dataset.id;
+        const itemStruct = state.items.find(i => i.id == itemId);
+        if (!itemStruct) return;
+
+        e.preventDefault();
+        transformHandle.setPointerCapture(e.pointerId);
+        transformHandle.style.cursor = 'grabbing';
+
+        const rect = selectedEl.getBoundingClientRect();
+        handleState.centerX = rect.left + rect.width / 2;
+        handleState.centerY = rect.top + rect.height / 2;
+
+        const dx = e.clientX - handleState.centerX;
+        const dy = e.clientY - handleState.centerY;
+        handleState.startDist = Math.max(Math.hypot(dx, dy), 10);
+        handleState.startAngle = Math.atan2(dy, dx);
+        handleState.startRotation = itemStruct.rotation || 0;
+        handleState.startScale = itemStruct.scale || 1;
+        handleState.itemId = itemId;
+        handleState.active = true;
+    });
+
+    transformHandle.addEventListener('pointermove', (e) => {
+        if (!handleState.active) return;
+        const itemStruct = state.items.find(i => i.id == handleState.itemId);
+        if (!itemStruct) return;
+
+        const dx = e.clientX - handleState.centerX;
+        const dy = e.clientY - handleState.centerY;
+        const dist = Math.max(Math.hypot(dx, dy), 10);
+        const angle = Math.atan2(dy, dx);
+        const deltaAngle = angle - handleState.startAngle;
+
+        const degrees = handleState.startRotation + (deltaAngle * 180 / Math.PI);
+        let scale = handleState.startScale * (dist / handleState.startDist);
+        scale = Math.max(0.4, Math.min(2.5, scale));
+
+        itemStruct.rotation = degrees;
+        itemStruct.scale = scale;
+
+        // Use shared helper via global function
+        if (window.applyItemTransformForHandle) {
+            window.applyItemTransformForHandle(itemStruct);
+        } else {
+            // Fallback: minimal transform
+            itemStruct.els.forEach(el => {
+                const x = parseFloat(el.getAttribute('data-x')) || 0;
+                const y = parseFloat(el.getAttribute('data-y')) || 0;
+                const flip = el.dataset.flip === 'true';
+                const sx = flip ? -scale : scale;
+                const sy = scale;
+                el.style.transform = `translate(${x}px, ${y}px) rotate(${degrees}deg) scale(${sx}, ${sy})`;
+            });
+        }
+
+        const selectedEl = state.selectedEl;
+        if (selectedEl) {
+            positionHandleForElement(selectedEl);
+        }
+    });
+
+    transformHandle.addEventListener('pointerup', (e) => {
+        handleState.active = false;
+        handleState.itemId = null;
+        transformHandle.releasePointerCapture(e.pointerId);
+        transformHandle.style.cursor = 'grab';
+    });
+
     const loadBase = async (src) => {
         state.currentBasePonySrc = src;
         try {
@@ -110,6 +229,15 @@ async function init() {
     if (devBtn) {
         devBtn.addEventListener('click', logCalibrationData);
     }
+
+    // Expose helper for transform handle to reuse core transform logic
+    window.applyItemTransformForHandle = function(itemStruct) {
+        // This function is implemented in stage-manager via applyItemTransform,
+        // but we can't import it here directly, so it is exposed on window in that file.
+        if (typeof window._applyItemTransformCore === 'function') {
+            window._applyItemTransformCore(itemStruct);
+        }
+    };
 }
 
 init();

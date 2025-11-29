@@ -3,6 +3,24 @@ import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
 
 export const STAGE = document.getElementById('stage');
 
+// Helper to apply translation + rotation + scale (+ flip) to all elements of an item
+function applyItemTransform(itemStruct) {
+    const rotation = itemStruct.rotation || 0;
+    const scale = itemStruct.scale || 1;
+
+    itemStruct.els.forEach(el => {
+        const x = parseFloat(el.getAttribute('data-x')) || 0;
+        const y = parseFloat(el.getAttribute('data-y')) || 0;
+        const flip = el.dataset.flip === 'true';
+
+        const sx = flip ? -scale : scale;
+        const sy = scale;
+
+        let transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${sx}, ${sy})`;
+        el.style.transform = transform;
+    });
+}
+
 export function updateWingCalibration(wingEl) {
     if (!state.currentBasePonySrc) return;
     
@@ -57,9 +75,15 @@ export function updateWingCalibration(wingEl) {
         state.calibrationData[baseFilename] = {};
     }
 
+    // Find the itemStruct to also grab rotation/scale
+    const id = wingEl.dataset.id;
+    const itemStruct = state.items.find(i => i.id == id);
+
     state.calibrationData[baseFilename][filename] = {
         x: Number(normX.toFixed(4)),
-        y: Number(normY.toFixed(4))
+        y: Number(normY.toFixed(4)),
+        rotation: itemStruct ? Number((itemStruct.rotation || 0).toFixed(2)) : 0,
+        scale: itemStruct ? Number((itemStruct.scale || 1).toFixed(2)) : 1
     };
     
     console.log(`Updated calibration for ${baseFilename} -> ${filename}`, state.calibrationData[baseFilename][filename]);
@@ -67,12 +91,27 @@ export function updateWingCalibration(wingEl) {
 
 export function logCalibrationData() {
     console.log("=== WING CALIBRATION DATA ===");
-    const data = JSON.stringify(state.calibrationData, null, 2);
+    const debug = {
+        calibrationData: state.calibrationData,
+        items: state.items.map(item => {
+            const masterEl = item.els.find(e => e.dataset.isMaster === 'true') || item.els[0];
+            const src = masterEl ? masterEl.src : null;
+            return {
+                id: item.id,
+                type: item.type,
+                src,
+                rotation: item.rotation || 0,
+                scale: item.scale || 1,
+                flip: masterEl ? masterEl.dataset.flip === 'true' : false
+            };
+        })
+    };
+    const data = JSON.stringify(debug, null, 2);
     console.log(data);
     navigator.clipboard.writeText(data).then(() => {
-        alert("Wing calibration data copied to clipboard!");
+        alert("Debug JSON (positions/transforms) copied to clipboard!");
     }).catch(err => {
-        alert("Wing calibration data logged to console.");
+        alert("Debug JSON logged to console.");
         console.error("Failed to copy to clipboard:", err);
     });
 }
@@ -97,11 +136,17 @@ export async function replaceFirstItemOfType(type, newSrc) {
             const x = parseFloat(el.getAttribute('data-x')) || 0;
             const y = parseFloat(el.getAttribute('data-y')) || 0;
 
-            let transform = `translate(${x}px, ${y}px)`;
-            if (shouldFlip) {
-                transform += ' scaleX(-1)';
+            // Rebuild transform via itemStruct to keep rotation/scale consistent
+            const itemStruct = state.items.find(i => i.id == itemStruct?.id) || itemStruct;
+            if (itemStruct) {
+                applyItemTransform(itemStruct);
+            } else {
+                let transform = `translate(${x}px, ${y}px)`;
+                if (shouldFlip) {
+                    transform += ' scaleX(-1)';
+                }
+                el.style.transform = transform;
             }
-            el.style.transform = transform;
         }
     }
 
@@ -170,9 +215,9 @@ export async function repositionWings(basePonySrc) {
 
             frontEl.style.left = left + 'px';
             frontEl.style.top = top + 'px';
-            // Reset transform translation, keep flip
-            const flip = frontEl.dataset.flip === 'true' ? ' scaleX(-1)' : '';
-            frontEl.style.transform = flip;
+            // Reset transform translation, keep flip but reset rotation/scale
+            wingItem.rotation = 0;
+            wingItem.scale = 1;
             frontEl.setAttribute('data-x', 0);
             frontEl.setAttribute('data-y', 0);
         }
@@ -185,11 +230,12 @@ export async function repositionWings(basePonySrc) {
 
             backEl.style.left = left + 'px';
             backEl.style.top = top + 'px';
-            const flip = backEl.dataset.flip === 'true' ? ' scaleX(-1)' : '';
-            backEl.style.transform = flip;
             backEl.setAttribute('data-x', 0);
             backEl.setAttribute('data-y', 0);
         }
+
+        // Apply shared transform for both elements
+        applyItemTransform(wingItem);
     });
 }
 
@@ -226,13 +272,9 @@ export function moveItem(id, dx, dy) {
         
         el.setAttribute('data-x', newX);
         el.setAttribute('data-y', newY);
-
-        let transform = `translate(${newX}px, ${newY}px)`;
-        if (el.dataset.flip === 'true') {
-            transform += ' scaleX(-1)';
-        }
-        el.style.transform = transform;
     });
+
+    applyItemTransform(itemStruct);
 }
 
 function createSingleItem(id, src, type, x, y) {
@@ -253,12 +295,15 @@ function createSingleItem(id, src, type, x, y) {
     el.style.left = (x - 80) + 'px';
     el.style.top = (y - 80) + 'px';
 
+    el.setAttribute('data-x', 0);
+    el.setAttribute('data-y', 0);
+
     const baseZ = 15;
     el.style.zIndex = String(baseZ);
 
     STAGE.appendChild(el);
 
-    state.items.push({ id, type, els: [el], baseZ, zOffset: 0 });
+    state.items.push({ id, type, els: [el], baseZ, zOffset: 0, rotation: 0, scale: 1 });
 }
 
 function createWingPair(id, src, x, y) {
@@ -298,9 +343,13 @@ function createWingPair(id, src, x, y) {
     backEl.style.left = (initLeft + 40) + 'px';
     backEl.style.top = (initTop - 20) + 'px';
 
+    backEl.setAttribute('data-x', 0);
+    backEl.setAttribute('data-y', 0);
+    frontEl.setAttribute('data-x', 0);
+    frontEl.setAttribute('data-y', 0);
+
     if (shouldFlip) {
-        frontEl.style.transform = 'scaleX(-1)';
-        backEl.style.transform = 'scaleX(-1)';
+        // flip handled via applyItemTransform
     }
 
     const backBaseZ = 5;
@@ -311,7 +360,9 @@ function createWingPair(id, src, x, y) {
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
 
-    state.items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ: 15, zOffset: 0 });
+    const itemStruct = { id, type: 'wing', els: [frontEl, backEl], baseZ: 15, zOffset: 0, rotation: 0, scale: 1 };
+    state.items.push(itemStruct);
+    applyItemTransform(itemStruct);
 }
 
 export function selectElement(el) {
@@ -324,6 +375,10 @@ export function selectElement(el) {
     setSelectedEl(el);
     if (el) {
         el.classList.add('selected');
+    }
+    // Show/hide transform handle
+    if (window.updateTransformHandleForSelection) {
+        window.updateTransformHandleForSelection(el);
     }
 }
 
@@ -340,17 +395,9 @@ export function flipSelected() {
         const newFlip = !currentFlip;
         
         el.dataset.flip = String(newFlip);
-
-        // Update transform preserving translation
-        const x = parseFloat(el.getAttribute('data-x')) || 0;
-        const y = parseFloat(el.getAttribute('data-y')) || 0;
-        
-        let transform = `translate(${x}px, ${y}px)`;
-        if (newFlip) {
-            transform += ' scaleX(-1)';
-        }
-        el.style.transform = transform;
     });
+
+    applyItemTransform(itemStruct);
 }
 
 export function deleteItem(id) {

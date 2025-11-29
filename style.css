@@ -307,3 +307,8 @@ body, html {
     border-color: red;
     box-shadow: 0 0 15px rgba(255,0,0,0.4);
 }
+
+/* Add handle styling tweaks if desired */
+#transform-handle {
+    z-index: 250;
+}
