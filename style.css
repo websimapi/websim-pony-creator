@@ -211,9 +211,9 @@ body, html {
 /* Delete Zone (Appears when dragging) */
 #delete-zone {
     position: absolute;
-    bottom: 180px; /* Above palette */
-    left: 50%;
-    transform: translateX(-50%) translateY(50px);
+    bottom: 10px; /* Near bottom of UI */
+    right: 10px;  /* Bottom-right corner */
+    transform: translateX(0) translateY(50px);
     background: rgba(255, 0, 0, 0.1);
     border: 2px dashed red;
     border-radius: 50px;
@@ -225,16 +225,16 @@ body, html {
     color: red;
     opacity: 0;
     transition: all 0.3s ease;
-    z-index: 90;
+    z-index: 210; /* Above palette and other UI */
     pointer-events: none;
 }
 
 #delete-zone.active {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(0) translateY(0);
 }
 
 #delete-zone.hover {
     background: rgba(255, 0, 0, 0.3);
-    transform: translateX(-50%) scale(1.1);
+    transform: translateX(0) scale(1.1);
 }
