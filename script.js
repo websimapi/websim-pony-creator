@@ -96,14 +96,70 @@ function setupStageInteractions() {
 }
 
 function setupPaletteInteractions() {
-    const paletteItems = document.querySelectorAll('.palette-item');
+    // Use Interact.js to drag from palette onto the stage (touch + mouse)
+    interact('.palette-item').draggable({
+        inertia: true,
+        listeners: {
+            start(event) {
+                const source = event.target;
+                const type = source.dataset.type;
+                const src = source.src;
 
-    paletteItems.forEach(item => {
-        item.addEventListener('pointerdown', (e) => {
-            // e.preventDefault();
-            // We clone the item to start dragging
-            spawnItem(item.src, item.dataset.type, e.clientX, e.clientY);
-        });
+                // Create a floating ghost element following the finger/mouse
+                const ghost = document.createElement('img');
+                ghost.src = src;
+                ghost.className = 'stage-item'; // reuse styling for visibility
+                ghost.style.position = 'fixed';
+                ghost.style.pointerEvents = 'none';
+                ghost.style.width = '70px';
+                ghost.style.height = '70px';
+                ghost.style.left = event.clientX - 35 + 'px';
+                ghost.style.top = event.clientY - 35 + 'px';
+                ghost.style.opacity = '0.9';
+                ghost.style.zIndex = '999';
+
+                document.body.appendChild(ghost);
+
+                // Attach data to interaction for later
+                event.interaction.data = {
+                    type,
+                    src,
+                    ghost
+                };
+            },
+            move(event) {
+                const data = event.interaction.data;
+                if (!data || !data.ghost) return;
+
+                const ghost = data.ghost;
+                ghost.style.left = event.clientX - 35 + 'px';
+                ghost.style.top = event.clientY - 35 + 'px';
+            },
+            end(event) {
+                const data = event.interaction.data;
+                if (data && data.ghost) {
+                    // Determine if dropped over stage
+                    const stageRect = STAGE.getBoundingClientRect();
+                    const dropX = event.clientX;
+                    const dropY = event.clientY;
+
+                    if (
+                        dropX >= stageRect.left &&
+                        dropX <= stageRect.right &&
+                        dropY >= stageRect.top &&
+                        dropY <= stageRect.bottom
+                    ) {
+                        // Spawn item in stage coordinates
+                        spawnItem(data.src, data.type, dropX, dropY);
+                    }
+
+                    // Clean up ghost
+                    data.ghost.remove();
+                }
+
+                event.interaction.data = null;
+            }
+        }
     });
 }
 
@@ -150,10 +206,6 @@ function createWingPair(id, src, x, y) {
     backEl.dataset.id = id;
     backEl.dataset.isBack = 'true';
     backEl.style.width = '100px';
-    // Back wing is flipped horizontally and offset slightly
-    backEl.style.transform = 'scaleX(-1) translate(20px, 0)'; 
-    // Note on transform: scaleX(-1) flips it. The translate might be inverted due to flip.
-    // Let's rely on data attributes for storing position and render in loop or just use absolute positioning logic
 
     // Front Wing (In front of pony) - This is the "Handle"
     const frontEl = document.createElement('img');
@@ -167,20 +219,15 @@ function createWingPair(id, src, x, y) {
     const w = 100;
     const h = 100; // approximation
 
-    // Initial positions
-    const initLeft = (x - w/2);
-    const initTop = (y - h/2);
+    // Initial positions in stage coords
+    const initLeft = (x - w / 2);
+    const initTop = (y - h / 2);
 
     frontEl.style.left = initLeft + 'px';
     frontEl.style.top = initTop + 'px';
 
-    // The back wing should be positioned relative to the front wing logically
-    // But in DOM they are siblings. 
-    // Strategy: We will update Back Wing position whenever Front Wing moves.
-    // Back wing is usually slightly offset to the left/right depending on perspective.
-    // For a side view pony, the back wing attaches at roughly the same shoulder point but appears 'behind'.
-    
-    backEl.style.left = (initLeft + 20) + 'px'; // Offset for perspective
+    // Back wing offset for depth, behind pony
+    backEl.style.left = (initLeft + 20) + 'px';
     backEl.style.top = (initTop - 10) + 'px';
 
     STAGE.appendChild(backEl);
@@ -222,29 +269,12 @@ function makeInteractable(el, slaveEl = null) {
 
                     // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        // Slave uses same delta
-                        // But slave might have its own initial transform (scaleX(-1)). 
-                        // We need to preserve its flip.
-                        // We can't just set transform because it overwrites scale.
-                        // So we use a wrapper approach OR just append translate to the string.
-                        // Easier: Use top/left for base position + transform for drag delta.
-                        // Wait, interactjs uses transform translate usually.
-
-                        // Let's store slave X/Y too
                         var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
                         var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
 
                         slaveEl.setAttribute('data-x', sx);
                         slaveEl.setAttribute('data-y', sy);
 
-                        // Slave is flipped.
-                        slaveEl.style.transform = `translate(${sx}px, ${sy}px) scaleX(-1)`;
-                        // Wait, if we scaleX(-1), the X axis is inverted for the translate inside the transform?
-                        // Let's test: scaleX(-1) translate(10px, 0) -> visually moves LEFT by 10px if origin is center.
-                        // Actually, CSS transform order matters.
-                        // If we do `translate(x,y) scaleX(-1)`, it moves then flips.
-                        // If we do `scaleX(-1) translate(x,y)`, it flips axes then moves.
-                        // Let's use `translate(${sx}px, ${sy}px) scaleX(-1)` for the slave.
                         slaveEl.style.transform = `translate(${sx}px, ${sy}px) scaleX(-1)`;
                     }
 
@@ -299,9 +329,6 @@ function makeInteractable(el, slaveEl = null) {
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
 
-                        // Slave position logic is complex during resize if not synced perfectly.
-                        // Simplified: Just update slave width/height. 
-                        // Re-sync position
                         var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
                         var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
 
