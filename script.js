@@ -1,7 +1,7 @@
 import interact from 'interactjs';
 
 // Configuration
-const BASE_PONY_SRC = '/base_pony.jpeg';
+const BASE_PONY_SRC = '/base_pony (1).jpeg';
 const STAGE = document.getElementById('stage');
 const DELETE_ZONE = document.createElement('div');
 
