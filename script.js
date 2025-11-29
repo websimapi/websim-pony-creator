@@ -439,14 +439,31 @@ function makeInteractable(el, slaveEl = null) {
                    const clientX = event.clientX;
                    const clientY = event.clientY;
 
-                   // If we started on a transparent pixel, cancel this drag
+                   // If we started on a transparent pixel, try to redirect the drag
                    if (!isOpaqueAtElement(target, clientX, clientY)) {
-                       // Try to pick an underlying opaque asset instead
                        const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
                        if (underlying) {
+                           // Select the underlying element
                            selectElement(underlying);
+                           // Re-route this interaction to the underlying element so drag continues
+                           try {
+                               event.interaction.start(
+                                   {
+                                       name: 'drag',
+                                       axis: 'xy'
+                                   },
+                                   event.interaction.interactable, // same interactable config
+                                   underlying
+                               );
+                           } catch (e) {
+                               // If rerouting fails, just fall through and stop the drag
+                               console.warn('Failed to reroute drag to underlying element', e);
+                               event.interaction.stop();
+                           }
+                       } else {
+                           // No opaque asset underneath; let the interaction end
+                           event.interaction.stop();
                        }
-                       event.interaction.stop();
                        return;
                    }
 
