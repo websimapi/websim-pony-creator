@@ -243,17 +243,10 @@ function createSingleItem(id, src, type, x, y) {
     el.dataset.type = type;
     el.style.width = '160px'; // doubled size
     el.draggable = false;
-    
-    // Initialize interact state explicitly
-    el.setAttribute('data-x', 0);
-    el.setAttribute('data-y', 0);
 
     // Center the spawn
     el.style.left = (x - 80) + 'px';
     el.style.top = (y - 80) + 'px';
-    
-    // Initialize transform
-    el.style.transform = 'translate(0px, 0px)';
 
     // Base z-index for horns/marks
     const baseZ = 20;
@@ -276,8 +269,6 @@ function createWingPair(id, src, x, y) {
     backEl.dataset.type = 'wing';
     backEl.style.width = '200px';
     backEl.draggable = false;
-    backEl.setAttribute('data-x', 0);
-    backEl.setAttribute('data-y', 0);
 
     // Front Wing (In front of pony) - This is the "Handle"
     const frontEl = document.createElement('img');
@@ -289,8 +280,6 @@ function createWingPair(id, src, x, y) {
     frontEl.dataset.type = 'wing';
     frontEl.style.width = '200px';
     frontEl.draggable = false;
-    frontEl.setAttribute('data-x', 0);
-    frontEl.setAttribute('data-y', 0);
 
     // Position
     const w = 200;
@@ -307,9 +296,9 @@ function createWingPair(id, src, x, y) {
     backEl.style.left = (initLeft + 40) + 'px';
     backEl.style.top = (initTop - 20) + 'px';
 
-    // Initial visual flip before first drag, with explicit translate to match move logic
-    frontEl.style.transform = 'translate(0px, 0px) scaleX(-1)';
-    backEl.style.transform = 'translate(0px, 0px) scaleX(-1)';
+    // Initial visual flip before first drag
+    frontEl.style.transform = 'scaleX(-1)';
+    backEl.style.transform = 'scaleX(-1)';
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
@@ -330,35 +319,41 @@ function makeInteractable(el, slaveEl = null) {
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
-                    var target = event.target;
-                    // keep the dragged position in the data-x/data-y attributes
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                    const target = event.target;
 
-                    // translate the element, preserving flip if needed
-                    let transform = `translate(${x}px, ${y}px)`;
+                    // Current position from left/top (default to 0)
+                    const currentLeft = parseFloat(target.style.left || '0');
+                    const currentTop = parseFloat(target.style.top || '0');
+
+                    const newLeft = currentLeft + event.dx;
+                    const newTop = currentTop + event.dy;
+
+                    target.style.left = newLeft + 'px';
+                    target.style.top = newTop + 'px';
+
+                    // Preserve horizontal flip if needed
                     if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
+                        target.style.transform = 'scaleX(-1)';
+                    } else {
+                        target.style.transform = '';
                     }
-                    target.style.transform = transform;
-
-                    // update the position attributes
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
 
                     // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
+                        const sCurrentLeft = parseFloat(slaveEl.style.left || '0');
+                        const sCurrentTop = parseFloat(slaveEl.style.top || '0');
 
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
+                        const sNewLeft = sCurrentLeft + event.dx;
+                        const sNewTop = sCurrentTop + event.dy;
 
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
+                        slaveEl.style.left = sNewLeft + 'px';
+                        slaveEl.style.top = sNewTop + 'px';
+
                         if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
+                            slaveEl.style.transform = 'scaleX(-1)';
+                        } else {
+                            slaveEl.style.transform = '';
                         }
-                        slaveEl.style.transform = sTransform;
                     }
 
                     // Delete Zone Check
@@ -390,11 +385,13 @@ function makeInteractable(el, slaveEl = null) {
 
             listeners: {
                 move: function (event) {
-                    var target = event.target;
-                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
-                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
+                    const target = event.target;
 
-                    // update the element's style
+                    // Current position from left/top (default to 0)
+                    let x = parseFloat(target.style.left || '0');
+                    let y = parseFloat(target.style.top || '0');
+
+                    // update the element's size
                     target.style.width = event.rect.width + 'px';
                     target.style.height = event.rect.height + 'px';
 
@@ -402,34 +399,34 @@ function makeInteractable(el, slaveEl = null) {
                     x += event.deltaRect.left;
                     y += event.deltaRect.top;
 
-                    let transform = 'translate(' + x + 'px,' + y + 'px)';
+                    target.style.left = x + 'px';
+                    target.style.top = y + 'px';
+
                     if (target.dataset.flip === 'true') {
-                        transform += ' scaleX(-1)';
+                        target.style.transform = 'scaleX(-1)';
+                    } else {
+                        target.style.transform = '';
                     }
-                    target.style.transform = transform;
 
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
-
-                    // Resize slave if exists
+                    // Resize/move slave if exists
                     if (slaveEl) {
+                        let sx = parseFloat(slaveEl.style.left || '0');
+                        let sy = parseFloat(slaveEl.style.top || '0');
+
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
-
-                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
-                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
 
                         sx += event.deltaRect.left;
                         sy += event.deltaRect.top;
 
-                        slaveEl.setAttribute('data-x', sx);
-                        slaveEl.setAttribute('data-y', sy);
+                        slaveEl.style.left = sx + 'px';
+                        slaveEl.style.top = sy + 'px';
 
-                        let sTransform = `translate(${sx}px, ${sy}px)`;
                         if (slaveEl.dataset.flip === 'true') {
-                            sTransform += ' scaleX(-1)';
+                            slaveEl.style.transform = 'scaleX(-1)';
+                        } else {
+                            slaveEl.style.transform = '';
                         }
-                        slaveEl.style.transform = sTransform;
                     }
                 }
             },
