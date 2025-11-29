@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pony Creator</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+          "imports": {
+            "interactjs": "https://esm.sh/interactjs"
+          }
+        }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div id="stage-container">
+            <div id="stage">
+                <!-- Layers will be injected here -->
+                <img id="base-pony" alt="Base Pony" draggable="false">
+            </div>
+        </div>
+        
+        <div id="palette">
+            <div class="palette-category">
+                <span class="label">Wings</span>
+                <div class="items">
+                    <img src="wing.png" class="palette-item" data-type="wing" draggable="false">
+                </div>
+            </div>
+            <div class="palette-category">
+                <span class="label">Horns</span>
+                <div class="items">
+                    <img src="horn.png" class="palette-item" data-type="horn" draggable="false">
+                </div>
+            </div>
+            <div class="palette-category">
+                <span class="label">Marks</span>
+                <div class="items">
+                    <img src="mark_star.png" class="palette-item" data-type="mark" draggable="false">
+                    <img src="mark_heart.png" class="palette-item" data-type="mark" draggable="false">
+                    <img src="mark_bolt.png" class="palette-item" data-type="mark" draggable="false">
+                </div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <button id="clear-btn">Clear All</button>
+            <p class="hint">Drag items onto the pony!</p>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
