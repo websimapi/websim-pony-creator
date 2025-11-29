@@ -1,4 +1,4 @@
-import { state, getNextId, getSelectedEl, setSelectedEl } from './state.js';
+import { state, getNextId, getSelectedEl, setSelectedEl, getWingDefaultFlip } from './state.js';
 import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
 
 export const STAGE = document.getElementById('stage');
@@ -246,9 +246,8 @@ function createSingleItem(id, src, type, x, y) {
 }
 
 function createWingPair(id, src, x, y) {
-    // Determine default flip per asset.
-    // Rainbow wing (wing.png) should be flipped horizontally; others use natural direction.
-    const shouldFlip = src.includes('wing.png');
+    // Determine default flip per asset using centralized settings
+    const shouldFlip = getWingDefaultFlip(src);
 
     const backEl = document.createElement('img');
     backEl.src = src;

@@ -1,6 +1,7 @@
 import interact from 'interactjs';
 import { isOpaqueAtElement, getTopItemAt } from './image-utils.js';
 import { spawnItem, selectElement, deleteItem, moveItem, updateWingCalibration } from './stage-manager.js';
+import { getWingDefaultFlip } from './state.js';
 
 export function setupPaletteInteractions() {
     // Only make items draggable if they are NOT base types
@@ -55,8 +56,9 @@ export function setupPaletteInteractions() {
                     front.style.left = '0';
                     front.style.top = '0';
 
-                    // Match stage-manager default flip for rainbow wings (bat wings use natural direction)
-                    if (src.includes('wing.png')) {
+                    // Use centralized default flip for wings
+                    const shouldFlip = getWingDefaultFlip(src);
+                    if (shouldFlip) {
                         front.style.transform = 'scaleX(-1)';
                         back.style.transform = 'scaleX(-1)';
                     }
