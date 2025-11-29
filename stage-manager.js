@@ -142,16 +142,7 @@ export async function replaceFirstItemOfType(type, newSrc) {
             const y = parseFloat(el.getAttribute('data-y')) || 0;
 
             // Rebuild transform via itemStruct to keep rotation/scale consistent
-            const itemStruct = state.items.find(i => i.id == itemStruct?.id) || itemStruct;
-            if (itemStruct) {
-                applyItemTransform(itemStruct);
-            } else {
-                let transform = `translate(${x}px, ${y}px)`;
-                if (shouldFlip) {
-                    transform += ' scaleX(-1)';
-                }
-                el.style.transform = transform;
-            }
+            applyItemTransform(itemStruct);
         }
     }
 
