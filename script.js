@@ -14,6 +14,9 @@ let items = [];
 let nextId = 1;
 let selectedEl = null;
 
+// Cache for per-pixel hit-testing
+const imageHitmapCache = new Map();
+
 // Initialize
 async function init() {
     const ponyImg = document.getElementById('base-pony');
@@ -88,6 +91,78 @@ function processBasePony(src) {
         };
         img.onerror = reject;
     });
+}
+
+// ---------------------------------------------------------
+// Per-pixel hit-testing helpers
+// ---------------------------------------------------------
+function prepareHitmap(src) {
+    if (imageHitmapCache.has(src)) return;
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = src;
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        imageHitmapCache.set(src, {
+            width: canvas.width,
+            height: canvas.height,
+            data: imageData.data
+        });
+    };
+}
+
+function isOpaqueAtElement(el, clientX, clientY) {
+    const src = el.src;
+    const hitmap = imageHitmapCache.get(src);
+    if (!hitmap) {
+        // If we don't have data yet, treat as opaque so interaction still works.
+        return true;
+    }
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+
+    let x = ((clientX - rect.left) / rect.width) * hitmap.width;
+    let y = ((clientY - rect.top) / rect.height) * hitmap.height;
+
+    x = Math.floor(x);
+    y = Math.floor(y);
+
+    if (x < 0 || y < 0 || x >= hitmap.width || y >= hitmap.height) {
+        return false;
+    }
+
+    // Handle horizontal flip
+    if (el.dataset.flip === 'true') {
+        x = hitmap.width - 1 - x;
+    }
+
+    const idx = (y * hitmap.width + x) * 4 + 3; // alpha channel
+    const alpha = hitmap.data[idx];
+
+    // Consider pixels with small alpha as transparent
+    return alpha > 10;
+}
+
+function pickUnderlyingOpaqueStageItem(excludeEl, clientX, clientY) {
+    const elements = document.elementsFromPoint(clientX, clientY);
+    for (const el of elements) {
+        if (
+            el !== excludeEl &&
+            el.classList &&
+            el.classList.contains('stage-item') &&
+            isOpaqueAtElement(el, clientX, clientY)
+        ) {
+            return el;
+        }
+    }
+    return null;
 }
 
 // ---------------------------------------------------------
@@ -234,6 +309,9 @@ function spawnItem(src, type, x, y) {
 
     const id = nextId++;
 
+    // Ensure hitmap is prepared for this asset
+    prepareHitmap(src);
+
     // Create DOM elements
     if (type === 'wing') {
         createWingPair(id, src, stageX, stageY);
@@ -330,6 +408,21 @@ function makeInteractable(el, slaveEl = null) {
             autoScroll: true,
             listeners: {
                 start(event) {
+                   const target = event.target;
+                   const clientX = event.clientX;
+                   const clientY = event.clientY;
+
+                   // If we started on a transparent pixel, cancel this drag
+                   if (!isOpaqueAtElement(target, clientX, clientY)) {
+                       // Try to pick an underlying opaque asset instead
+                       const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
+                       if (underlying) {
+                           selectElement(underlying);
+                       }
+                       event.interaction.stop();
+                       return;
+                   }
+
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
@@ -447,7 +540,24 @@ function makeInteractable(el, slaveEl = null) {
             inertia: true
         })
         .on('tap', function (event) {
-            selectElement(event.target);
+            const target = event.target;
+            const clientX = event.clientX;
+            const clientY = event.clientY;
+
+            // Ignore taps on transparent pixels and fall through to underlying opaque asset
+            if (!isOpaqueAtElement(target, clientX, clientY)) {
+                const underlying = pickUnderlyingOpaqueStageItem(target, clientX, clientY);
+                if (underlying) {
+                    selectElement(underlying);
+                } else {
+                    // clear selection if nothing opaque underneath
+                    selectElement(null);
+                }
+                event.preventDefault();
+                return;
+            }
+
+            selectElement(target);
             event.preventDefault();
         });
 }
