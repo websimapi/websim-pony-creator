@@ -38,10 +38,8 @@ async function init() {
     document.getElementById('clear-btn').addEventListener('click', clearAll);
 
     // Z-index controls
-    document.getElementById('horn-z-up').addEventListener('click', () => adjustZForType('horn', 1));
-    document.getElementById('horn-z-down').addEventListener('click', () => adjustZForType('horn', -1));
-    document.getElementById('mark-z-up').addEventListener('click', () => adjustZForType('mark', 1));
-    document.getElementById('mark-z-down').addEventListener('click', () => adjustZForType('mark', -1));
+    document.getElementById('z-up').addEventListener('click', () => adjustZForSelected(1));
+    document.getElementById('z-down').addEventListener('click', () => adjustZForSelected(-1));
 }
 
 // ---------------------------------------------------------
@@ -107,10 +105,8 @@ function selectElement(el) {
     }
 }
 
-function adjustZForType(type, delta) {
+function adjustZForSelected(delta) {
     if (!selectedEl) return;
-    const itemType = selectedEl.dataset.type;
-    if (itemType !== type) return;
 
     const id = selectedEl.dataset.id;
     const itemStruct = items.find(i => i.id == id);
