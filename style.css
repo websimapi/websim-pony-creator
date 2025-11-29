@@ -165,6 +165,7 @@ body, html {
     border: 2px solid transparent;
     transition: all 0.2s ease;
     cursor: grab;
+    touch-action: pan-x !important; /* Allow horizontal scrolling */
 }
 
 /* Flip wing preview in palette so it matches the pony's facing direction */

@@ -6,11 +6,17 @@ export function setupPaletteInteractions() {
     // Only make items draggable if they are NOT base types
     interact('.palette-item:not([data-type="base"])').draggable({
         inertia: true,
+        startAxis: 'y',
         listeners: {
             start(event) {
                 const source = event.target;
                 const type = source.dataset.type;
                 const src = source.src;
+
+                // Determine input type to apply offset for visibility on touch
+                const pointerType = event.pointerType || 'mouse';
+                const isTouch = pointerType !== 'mouse';
+                const yOffset = isTouch ? 100 : 0;
 
                 const ghost = document.createElement('img');
                 ghost.src = src;
@@ -20,7 +26,7 @@ export function setupPaletteInteractions() {
                 ghost.style.width = '140px';
                 ghost.style.height = '140px';
                 ghost.style.left = event.clientX - 70 + 'px';
-                ghost.style.top = event.clientY - 70 + 'px';
+                ghost.style.top = (event.clientY - 70 - yOffset) + 'px';
                 ghost.style.opacity = '0.9';
                 ghost.style.zIndex = '999';
 
@@ -33,30 +39,34 @@ export function setupPaletteInteractions() {
                 event.interaction.data = {
                     type,
                     src,
-                    ghost
+                    ghost,
+                    yOffset
                 };
             },
             move(event) {
                 const data = event.interaction.data;
                 if (!data || !data.ghost) return;
 
+                const yOffset = data.yOffset || 0;
                 const ghost = data.ghost;
                 ghost.style.left = event.clientX - 70 + 'px';
-                ghost.style.top = event.clientY - 70 + 'px';
+                ghost.style.top = (event.clientY - 70 - yOffset) + 'px';
             },
             async end(event) {
                 const data = event.interaction.data;
                 if (data && data.ghost) {
-                    const stageRect = STAGE.getBoundingClientRect();
+                    const yOffset = data.yOffset || 0;
+                    
+                    // We drop where the ghost center was
                     const dropX = event.clientX;
-                    const dropY = event.clientY;
+                    const dropY = event.clientY - yOffset;
 
-                    if (
-                        dropX >= stageRect.left &&
-                        dropX <= stageRect.right &&
-                        dropY >= stageRect.top &&
-                        dropY <= stageRect.bottom
-                    ) {
+                    const paletteRect = document.getElementById('palette').getBoundingClientRect();
+                    const stageRect = STAGE.getBoundingClientRect();
+
+                    // Allow dropping anywhere in the game area (above palette)
+                    // We check if it's generally within the stage view vertically
+                    if (dropY < paletteRect.top) {
                         await spawnItem(data.src, data.type, dropX, dropY);
                     }
                     data.ghost.remove();
