@@ -439,7 +439,7 @@ function makeInteractable(el, slaveEl = null) {
             modifiers: [
                 // minimum size
                 interact.modifiers.restrictSize({
-                    min: { width: 60, height: 60 }
+                    min: { width: 30, height: 30 }
                 })
             ],
             inertia: true
