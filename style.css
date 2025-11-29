@@ -124,6 +124,11 @@ body, html {
     cursor: grab;
 }
 
+/* Flip wing preview in palette so it matches the pony's facing direction */
+.palette-item[data-type="wing"] {
+    transform: scaleX(-1);
+}
+
 .palette-item:active {
     transform: scale(0.95);
     border-color: var(--accent);

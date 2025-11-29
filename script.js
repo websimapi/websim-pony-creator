@@ -118,6 +118,11 @@ function setupPaletteInteractions() {
                 ghost.style.opacity = '0.9';
                 ghost.style.zIndex = '999';
 
+                // Flip the ghost wing horizontally so it matches the palette wing
+                if (type === 'wing') {
+                    ghost.style.transform = 'scaleX(-1)';
+                }
+
                 document.body.appendChild(ghost);
 
                 // Attach data to interaction for later
@@ -205,6 +210,7 @@ function createWingPair(id, src, x, y) {
     backEl.className = `stage-item z-back wing-back`;
     backEl.dataset.id = id;
     backEl.dataset.isBack = 'true';
+    backEl.dataset.flip = 'true'; // mark as flipped
     backEl.style.width = '100px';
 
     // Front Wing (In front of pony) - This is the "Handle"
@@ -213,6 +219,7 @@ function createWingPair(id, src, x, y) {
     frontEl.className = `stage-item z-front`;
     frontEl.dataset.id = id;
     frontEl.dataset.isMaster = 'true'; // This one controls the pair
+    frontEl.dataset.flip = 'true';     // mark as flipped
     frontEl.style.width = '100px';
 
     // Position
@@ -229,6 +236,10 @@ function createWingPair(id, src, x, y) {
     // Back wing offset for depth, behind pony
     backEl.style.left = (initLeft + 20) + 'px';
     backEl.style.top = (initTop - 10) + 'px';
+
+    // Initial visual flip before first drag
+    frontEl.style.transform = 'scaleX(-1)';
+    backEl.style.transform = 'scaleX(-1)';
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
@@ -260,10 +271,14 @@ function makeInteractable(el, slaveEl = null) {
                     var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
                     var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-                    // translate the element
-                    target.style.transform = `translate(${x}px, ${y}px)`;
+                    // translate the element, preserving flip if needed
+                    let transform = `translate(${x}px, ${y}px)`;
+                    if (target.dataset.flip === 'true') {
+                        transform += ' scaleX(-1)';
+                    }
+                    target.style.transform = transform;
 
-                    // update the posiion attributes
+                    // update the position attributes
                     target.setAttribute('data-x', x);
                     target.setAttribute('data-y', y);
 
@@ -275,7 +290,11 @@ function makeInteractable(el, slaveEl = null) {
                         slaveEl.setAttribute('data-x', sx);
                         slaveEl.setAttribute('data-y', sy);
 
-                        slaveEl.style.transform = `translate(${sx}px, ${sy}px) scaleX(-1)`;
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
+                        if (slaveEl.dataset.flip === 'true') {
+                            sTransform += ' scaleX(-1)';
+                        }
+                        slaveEl.style.transform = sTransform;
                     }
 
                     // Delete Zone Check
@@ -319,7 +338,11 @@ function makeInteractable(el, slaveEl = null) {
                     x += event.deltaRect.left;
                     y += event.deltaRect.top;
 
-                    target.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+                    let transform = 'translate(' + x + 'px,' + y + 'px)';
+                    if (target.dataset.flip === 'true') {
+                        transform += ' scaleX(-1)';
+                    }
+                    target.style.transform = transform;
 
                     target.setAttribute('data-x', x);
                     target.setAttribute('data-y', y);
@@ -338,7 +361,11 @@ function makeInteractable(el, slaveEl = null) {
                         slaveEl.setAttribute('data-x', sx);
                         slaveEl.setAttribute('data-y', sy);
 
-                        slaveEl.style.transform = `translate(${sx}px, ${sy}px) scaleX(-1)`;
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
+                        if (slaveEl.dataset.flip === 'true') {
+                            sTransform += ' scaleX(-1)';
+                        }
+                        slaveEl.style.transform = sTransform;
                     }
                 }
             },
