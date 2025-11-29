@@ -119,7 +119,7 @@ function adjustZForSelected(delta) {
     );
     itemStruct.zOffset = newOffset;
 
-    const baseZ = itemStruct.baseZ || 20;
+    const baseZ = itemStruct.baseZ || 15;
     const finalZ = baseZ + newOffset;
 
     itemStruct.els.forEach(el => {
@@ -244,8 +244,8 @@ function createSingleItem(id, src, type, x, y) {
     el.style.left = (x - 80) + 'px';
     el.style.top = (y - 80) + 'px';
 
-    // Base z-index for horns/marks
-    const baseZ = 20;
+    // Base z-index for horns/marks (mid-layer so they can go in front or behind pony)
+    const baseZ = 15;
     el.style.zIndex = String(baseZ);
 
     STAGE.appendChild(el);
@@ -296,13 +296,18 @@ function createWingPair(id, src, x, y) {
     frontEl.style.transform = 'scaleX(-1)';
     backEl.style.transform = 'scaleX(-1)';
 
+    // Base z-index for the wing pair (mid-layer so they can go in front or behind pony)
+    const baseZ = 15;
+    frontEl.style.zIndex = String(baseZ);
+    backEl.style.zIndex = String(baseZ);
+
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
 
     // Only make the front wing interactive for dragging
     makeInteractable(frontEl, backEl);
 
-    items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ: 20, zOffset: 0 });
+    items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ, zOffset: 0 });
 }
 
 function makeInteractable(el, slaveEl = null) {
