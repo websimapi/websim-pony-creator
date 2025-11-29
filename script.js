@@ -119,12 +119,23 @@ function adjustZForSelected(delta) {
     );
     itemStruct.zOffset = newOffset;
 
-    const baseZ = itemStruct.baseZ || 15;
-    const finalZ = baseZ + newOffset;
+    // Wings have special layering: one behind pony, one in front
+    if (itemStruct.type === 'wing') {
+        itemStruct.els.forEach(el => {
+            const isBack = el.dataset.isBack === 'true';
+            const baseZ = isBack ? 5 : 20; // back wing behind pony, front wing in front
+            const finalZ = baseZ + newOffset;
+            el.style.zIndex = String(finalZ);
+        });
+    } else {
+        // Non-wing items share a single mid-layer base so they can move in front/behind
+        const baseZ = itemStruct.baseZ || 15;
+        const finalZ = baseZ + newOffset;
 
-    itemStruct.els.forEach(el => {
-        el.style.zIndex = finalZ;
-    });
+        itemStruct.els.forEach(el => {
+            el.style.zIndex = String(finalZ);
+        });
+    }
 }
 
 function clamp(v, min, max) {
@@ -296,10 +307,12 @@ function createWingPair(id, src, x, y) {
     frontEl.style.transform = 'scaleX(-1)';
     backEl.style.transform = 'scaleX(-1)';
 
-    // Base z-index for the wing pair (mid-layer so they can go in front or behind pony)
-    const baseZ = 15;
-    frontEl.style.zIndex = String(baseZ);
-    backEl.style.zIndex = String(baseZ);
+    // Base z-index for the wing pair:
+    // back wing behind pony (5), front wing in front of pony (20)
+    const backBaseZ = 5;
+    const frontBaseZ = 20;
+    frontEl.style.zIndex = String(frontBaseZ);
+    backEl.style.zIndex = String(backBaseZ);
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
@@ -307,7 +320,7 @@ function createWingPair(id, src, x, y) {
     // Only make the front wing interactive for dragging
     makeInteractable(frontEl, backEl);
 
-    items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ, zOffset: 0 });
+    items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ: 15, zOffset: 0 });
 }
 
 function makeInteractable(el, slaveEl = null) {
