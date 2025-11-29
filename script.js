@@ -242,6 +242,7 @@ function createSingleItem(id, src, type, x, y) {
     el.dataset.id = id;
     el.dataset.type = type;
     el.style.width = '160px'; // doubled size
+    el.draggable = false;
 
     // Center the spawn
     el.style.left = (x - 80) + 'px';
@@ -250,12 +251,6 @@ function createSingleItem(id, src, type, x, y) {
     // Base z-index for horns/marks
     const baseZ = 20;
     el.style.zIndex = String(baseZ);
-
-    // Click/tap selection
-    el.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        selectElement(el);
-    });
 
     STAGE.appendChild(el);
     makeInteractable(el);
@@ -273,6 +268,7 @@ function createWingPair(id, src, x, y) {
     backEl.dataset.flip = 'true'; // mark as flipped
     backEl.dataset.type = 'wing';
     backEl.style.width = '200px';
+    backEl.draggable = false;
 
     // Front Wing (In front of pony) - This is the "Handle"
     const frontEl = document.createElement('img');
@@ -283,6 +279,7 @@ function createWingPair(id, src, x, y) {
     frontEl.dataset.flip = 'true';     // mark as flipped
     frontEl.dataset.type = 'wing';
     frontEl.style.width = '200px';
+    frontEl.draggable = false;
 
     // Position
     const w = 200;
@@ -303,12 +300,6 @@ function createWingPair(id, src, x, y) {
     frontEl.style.transform = 'scaleX(-1)';
     backEl.style.transform = 'scaleX(-1)';
 
-    // Click/tap selection on front wing
-    frontEl.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        selectElement(frontEl);
-    });
-
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
 
@@ -319,51 +310,44 @@ function createWingPair(id, src, x, y) {
 }
 
 function makeInteractable(el, slaveEl = null) {
-    // Precompute offset between master and slave (for wing pairs)
-    if (slaveEl) {
-        const masterLeft = parseFloat(el.style.left) || 0;
-        const masterTop = parseFloat(el.style.top) || 0;
-        const slaveLeft = parseFloat(slaveEl.style.left) || 0;
-        const slaveTop = parseFloat(slaveEl.style.top) || 0;
-        el.dataset.slaveOffsetX = slaveLeft - masterLeft;
-        el.dataset.slaveOffsetY = slaveTop - masterTop;
-    }
-
     interact(el)
         .draggable({
             inertia: true,
-            modifiers: [
-                interact.modifiers.restrictRect({
-                    restriction: 'parent',
-                    endOnly: false
-                })
-            ],
             autoScroll: true,
             listeners: {
                 start(event) {
                    DELETE_ZONE.classList.add('active');
                 },
                 move(event) {
-                    const target = event.target;
+                    var target = event.target;
+                    // keep the dragged position in the data-x/data-y attributes
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-                    // Current absolute position
-                    let left = parseFloat(target.style.left) || 0;
-                    let top = parseFloat(target.style.top) || 0;
+                    // translate the element, preserving flip if needed
+                    let transform = `translate(${x}px, ${y}px)`;
+                    if (target.dataset.flip === 'true') {
+                        transform += ' scaleX(-1)';
+                    }
+                    target.style.transform = transform;
 
-                    // Apply deltas
-                    left += event.dx;
-                    top += event.dy;
+                    // update the position attributes
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
 
-                    // Update position
-                    target.style.left = left + 'px';
-                    target.style.top = top + 'px';
-
-                    // Move slave element if present (keep stored offset)
+                    // If there's a slave element (like back wing), move it too
                     if (slaveEl) {
-                        const offX = parseFloat(target.dataset.slaveOffsetX) || 0;
-                        const offY = parseFloat(target.dataset.slaveOffsetY) || 0;
-                        slaveEl.style.left = (left + offX) + 'px';
-                        slaveEl.style.top = (top + offY) + 'px';
+                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0) + event.dx;
+                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0) + event.dy;
+
+                        slaveEl.setAttribute('data-x', sx);
+                        slaveEl.setAttribute('data-y', sy);
+
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
+                        if (slaveEl.dataset.flip === 'true') {
+                            sTransform += ' scaleX(-1)';
+                        }
+                        slaveEl.style.transform = sTransform;
                     }
 
                     // Delete Zone Check
@@ -395,46 +379,60 @@ function makeInteractable(el, slaveEl = null) {
 
             listeners: {
                 move: function (event) {
-                    const target = event.target;
+                    var target = event.target;
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
 
-                    let left = parseFloat(target.style.left) || 0;
-                    let top = parseFloat(target.style.top) || 0;
-
-                    // update the element's size
+                    // update the element's style
                     target.style.width = event.rect.width + 'px';
                     target.style.height = event.rect.height + 'px';
 
-                    // adjust position when resizing from top or left
-                    left += event.deltaRect.left;
-                    top += event.deltaRect.top;
+                    // translate when resizing from top or left edges
+                    x += event.deltaRect.left;
+                    y += event.deltaRect.top;
 
-                    target.style.left = left + 'px';
-                    target.style.top = top + 'px';
+                    let transform = 'translate(' + x + 'px,' + y + 'px)';
+                    if (target.dataset.flip === 'true') {
+                        transform += ' scaleX(-1)';
+                    }
+                    target.style.transform = transform;
 
-                    // Resize/move slave if exists
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+
+                    // Resize slave if exists
                     if (slaveEl) {
-                        const offX = parseFloat(target.dataset.slaveOffsetX) || 0;
-                        const offY = parseFloat(target.dataset.slaveOffsetY) || 0;
-
                         slaveEl.style.width = event.rect.width + 'px';
                         slaveEl.style.height = event.rect.height + 'px';
 
-                        slaveEl.style.left = (left + offX) + 'px';
-                        slaveEl.style.top = (top + offY) + 'px';
+                        var sx = (parseFloat(slaveEl.getAttribute('data-x')) || 0);
+                        var sy = (parseFloat(slaveEl.getAttribute('data-y')) || 0);
+
+                        sx += event.deltaRect.left;
+                        sy += event.deltaRect.top;
+
+                        slaveEl.setAttribute('data-x', sx);
+                        slaveEl.setAttribute('data-y', sy);
+
+                        let sTransform = `translate(${sx}px, ${sy}px)`;
+                        if (slaveEl.dataset.flip === 'true') {
+                            sTransform += ' scaleX(-1)';
+                        }
+                        slaveEl.style.transform = sTransform;
                     }
                 }
             },
             modifiers: [
-                // keep the edges inside the parent
-                interact.modifiers.restrictEdges({
-                    outer: 'parent'
-                }),
                 // minimum size
                 interact.modifiers.restrictSize({
                     min: { width: 20, height: 20 }
                 })
             ],
             inertia: true
+        })
+        .on('tap', function (event) {
+            selectElement(event.target);
+            event.preventDefault();
         });
 }
 
