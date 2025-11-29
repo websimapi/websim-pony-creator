@@ -4,6 +4,20 @@ import { makeInteractable } from './interaction-handlers.js';
 
 export const STAGE = document.getElementById('stage');
 
+export async function replaceFirstItemOfType(type, newSrc) {
+    const itemStruct = state.items.find(i => i.type === type);
+    if (!itemStruct) return false;
+
+    // Ensure hitmap is ready for new image
+    await prepareHitmap(newSrc);
+
+    // Update source for all elements in this item (e.g. wing pair)
+    for (const el of itemStruct.els) {
+        el.src = newSrc;
+    }
+    return true;
+}
+
 export async function spawnItem(src, type, x, y) {
     const rect = STAGE.getBoundingClientRect();
 

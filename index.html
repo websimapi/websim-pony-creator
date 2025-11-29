@@ -23,12 +23,17 @@
         </div>
         
         <div id="palette">
-            <div class="palette-category">
-                <span class="label">Base</span>
-                <div class="items">
-                    <!-- Original -->
+            <div id="palette-tabs">
+                <button class="tab-btn active" data-category="base">Pony</button>
+                <button class="tab-btn" data-category="wings">Wings</button>
+                <button class="tab-btn" data-category="horns">Horns</button>
+                <button class="tab-btn" data-category="marks">Marks</button>
+            </div>
+            
+            <div id="palette-content">
+                <!-- Base Ponies -->
+                <div class="palette-category active" id="cat-base">
                     <img src="base-pony.jpeg" class="palette-item" data-type="base" draggable="false">
-                    <!-- New Variants -->
                     <img src="base_pony_white.png" class="palette-item" data-type="base" draggable="false">
                     <img src="base_pony_pink.png" class="palette-item" data-type="base" draggable="false">
                     <img src="base_pony_blue.png" class="palette-item" data-type="base" draggable="false">
@@ -36,26 +41,23 @@
                     <img src="base_pony_yellow.png" class="palette-item" data-type="base" draggable="false">
                     <img src="base_pony_sketch.png" class="palette-item" data-type="base" draggable="false">
                 </div>
-            </div>
-            <div class="palette-category">
-                <span class="label">Wings</span>
-                <div class="items">
+
+                <!-- Wings -->
+                <div class="palette-category" id="cat-wings">
                     <img src="wing.png" class="palette-item" data-type="wing" draggable="false">
                     <img src="wing_dragon.png" class="palette-item" data-type="wing" draggable="false">
                     <img src="wing_butterfly.png" class="palette-item" data-type="wing" draggable="false">
                 </div>
-            </div>
-            <div class="palette-category">
-                <span class="label">Horns</span>
-                <div class="items">
+
+                <!-- Horns -->
+                <div class="palette-category" id="cat-horns">
                     <img src="horn.png" class="palette-item" data-type="horn" draggable="false">
                     <img src="horn_blue.png" class="palette-item" data-type="horn" draggable="false">
                     <img src="horn_gold.png" class="palette-item" data-type="horn" draggable="false">
                 </div>
-            </div>
-            <div class="palette-category">
-                <span class="label">Marks</span>
-                <div class="items">
+
+                <!-- Marks -->
+                <div class="palette-category" id="cat-marks">
                     <img src="mark_star.png" class="palette-item" data-type="mark" draggable="false">
                     <img src="mark_heart.png" class="palette-item" data-type="mark" draggable="false">
                     <img src="mark_bolt.png" class="palette-item" data-type="mark" draggable="false">

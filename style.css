@@ -94,44 +94,70 @@ body, html {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 160px;
+    height: 180px;
     background: var(--panel-bg);
     box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
     display: flex;
-    flex-direction: row;
-    padding: 10px;
-    gap: 15px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    z-index: 100; /* UI layer above stage */
-    touch-action: pan-x; /* Allow horizontal scrolling on mobile */
+    flex-direction: column;
+    padding: 0;
+    z-index: 100;
     box-sizing: border-box;
 }
 
-.palette-category {
+#palette-tabs {
     display: flex;
-    flex-direction: column;
-    min-width: 100px;
+    height: 44px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
 }
 
-.palette-category .label {
-    font-size: 0.8rem;
+.tab-btn {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: #888;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    font-weight: bold;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    touch-action: manipulation;
 }
 
-.items {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: #fff;
+}
+
+#palette-content {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+.palette-category {
+    display: none; /* Hidden by default */
+    width: 100%;
     height: 100%;
+    align-items: center;
+    padding: 10px 15px;
+    gap: 15px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+    box-sizing: border-box;
+}
+
+.palette-category.active {
+    display: flex;
 }
 
 .palette-item {
-    width: 60px;
-    height: 60px;
+    width: 80px; /* Larger for mobile */
+    height: 80px;
     object-fit: contain;
     background: #f8f9fa;
     border-radius: 8px;
