@@ -12,6 +12,7 @@ document.getElementById('stage-container').appendChild(DELETE_ZONE);
 // State
 let items = [];
 let nextId = 1;
+let selectedEl = null;
 
 // Initialize
 async function init() {
@@ -35,6 +36,12 @@ async function init() {
 
     // 4. UI Listeners
     document.getElementById('clear-btn').addEventListener('click', clearAll);
+
+    // Z-index controls
+    document.getElementById('horn-z-up').addEventListener('click', () => adjustZForType('horn', 1));
+    document.getElementById('horn-z-down').addEventListener('click', () => adjustZForType('horn', -1));
+    document.getElementById('mark-z-up').addEventListener('click', () => adjustZForType('mark', 1));
+    document.getElementById('mark-z-down').addEventListener('click', () => adjustZForType('mark', -1));
 }
 
 // ---------------------------------------------------------
@@ -86,6 +93,49 @@ function processBasePony(src) {
 }
 
 // ---------------------------------------------------------
+// Z-index helpers
+// ---------------------------------------------------------
+function selectElement(el) {
+    if (selectedEl === el) return;
+
+    if (selectedEl) {
+        selectedEl.classList.remove('selected');
+    }
+    selectedEl = el;
+    if (selectedEl) {
+        selectedEl.classList.add('selected');
+    }
+}
+
+function adjustZForType(type, delta) {
+    if (!selectedEl) return;
+    const itemType = selectedEl.dataset.type;
+    if (itemType !== type) return;
+
+    const id = selectedEl.dataset.id;
+    const itemStruct = items.find(i => i.id == id);
+    if (!itemStruct) return;
+
+    const newOffset = clamp(
+        (itemStruct.zOffset || 0) + delta,
+        -10,
+        10
+    );
+    itemStruct.zOffset = newOffset;
+
+    const baseZ = itemStruct.baseZ || 20;
+    const finalZ = baseZ + newOffset;
+
+    itemStruct.els.forEach(el => {
+        el.style.zIndex = finalZ;
+    });
+}
+
+function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+}
+
+// ---------------------------------------------------------
 // Interactions
 // ---------------------------------------------------------
 
@@ -111,10 +161,10 @@ function setupPaletteInteractions() {
                 ghost.className = 'stage-item'; // reuse styling for visibility
                 ghost.style.position = 'fixed';
                 ghost.style.pointerEvents = 'none';
-                ghost.style.width = '70px';
-                ghost.style.height = '70px';
-                ghost.style.left = event.clientX - 35 + 'px';
-                ghost.style.top = event.clientY - 35 + 'px';
+                ghost.style.width = '140px';
+                ghost.style.height = '140px';
+                ghost.style.left = event.clientX - 70 + 'px';
+                ghost.style.top = event.clientY - 70 + 'px';
                 ghost.style.opacity = '0.9';
                 ghost.style.zIndex = '999';
 
@@ -137,8 +187,8 @@ function setupPaletteInteractions() {
                 if (!data || !data.ghost) return;
 
                 const ghost = data.ghost;
-                ghost.style.left = event.clientX - 35 + 'px';
-                ghost.style.top = event.clientY - 35 + 'px';
+                ghost.style.left = event.clientX - 70 + 'px';
+                ghost.style.top = event.clientY - 70 + 'px';
             },
             end(event) {
                 const data = event.interaction.data;
@@ -191,16 +241,26 @@ function createSingleItem(id, src, type, x, y) {
     el.className = `stage-item z-front`;
     el.dataset.id = id;
     el.dataset.type = type;
-    el.style.width = '80px'; // Initial size
+    el.style.width = '160px'; // doubled size
 
     // Center the spawn
-    el.style.left = (x - 40) + 'px';
-    el.style.top = (y - 40) + 'px';
+    el.style.left = (x - 80) + 'px';
+    el.style.top = (y - 80) + 'px';
+
+    // Base z-index for horns/marks
+    const baseZ = 20;
+    el.style.zIndex = String(baseZ);
+
+    // Click/tap selection
+    el.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        selectElement(el);
+    });
 
     STAGE.appendChild(el);
     makeInteractable(el);
 
-    items.push({ id, type, els: [el] });
+    items.push({ id, type, els: [el], baseZ, zOffset: 0 });
 }
 
 function createWingPair(id, src, x, y) {
@@ -211,7 +271,8 @@ function createWingPair(id, src, x, y) {
     backEl.dataset.id = id;
     backEl.dataset.isBack = 'true';
     backEl.dataset.flip = 'true'; // mark as flipped
-    backEl.style.width = '100px';
+    backEl.dataset.type = 'wing';
+    backEl.style.width = '200px';
 
     // Front Wing (In front of pony) - This is the "Handle"
     const frontEl = document.createElement('img');
@@ -220,11 +281,12 @@ function createWingPair(id, src, x, y) {
     frontEl.dataset.id = id;
     frontEl.dataset.isMaster = 'true'; // This one controls the pair
     frontEl.dataset.flip = 'true';     // mark as flipped
-    frontEl.style.width = '100px';
+    frontEl.dataset.type = 'wing';
+    frontEl.style.width = '200px';
 
     // Position
-    const w = 100;
-    const h = 100; // approximation
+    const w = 200;
+    const h = 200; // approximation
 
     // Initial positions in stage coords
     const initLeft = (x - w / 2);
@@ -234,12 +296,18 @@ function createWingPair(id, src, x, y) {
     frontEl.style.top = initTop + 'px';
 
     // Back wing offset for depth, behind pony
-    backEl.style.left = (initLeft + 20) + 'px';
-    backEl.style.top = (initTop - 10) + 'px';
+    backEl.style.left = (initLeft + 40) + 'px';
+    backEl.style.top = (initTop - 20) + 'px';
 
     // Initial visual flip before first drag
     frontEl.style.transform = 'scaleX(-1)';
     backEl.style.transform = 'scaleX(-1)';
+
+    // Click/tap selection on front wing
+    frontEl.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        selectElement(frontEl);
+    });
 
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
@@ -247,7 +315,7 @@ function createWingPair(id, src, x, y) {
     // Only make the front wing interactive for dragging
     makeInteractable(frontEl, backEl);
 
-    items.push({ id, type: 'wing', els: [frontEl, backEl] });
+    items.push({ id, type: 'wing', els: [frontEl, backEl], baseZ: 20, zOffset: 0 });
 }
 
 function makeInteractable(el, slaveEl = null) {
@@ -404,6 +472,10 @@ function clearAll() {
         itemStruct.els.forEach(el => el.remove());
     });
     items = [];
+    if (selectedEl) {
+        selectedEl.classList.remove('selected');
+        selectedEl = null;
+    }
 }
 
 init();

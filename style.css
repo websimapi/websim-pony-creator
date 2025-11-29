@@ -36,8 +36,8 @@ body, html {
 
 #stage {
     position: relative;
-    width: 350px; /* Base size, will scale if needed via JS or max-width */
-    height: 350px;
+    width: 700px; /* doubled size */
+    height: 700px;
     user-select: none;
 }
 
@@ -61,6 +61,13 @@ body, html {
 
 .stage-item:active {
     cursor: grabbing;
+}
+
+/* Selected item indicator */
+.stage-item.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
 }
 
 /* Z-Indices */
@@ -154,6 +161,29 @@ body, html {
     border-radius: 20px;
     font-weight: bold;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    cursor: pointer;
+}
+
+#z-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    pointer-events: auto;
+}
+
+.z-group {
+    display: flex;
+    gap: 4px;
+}
+
+.z-group button {
+    background: #ffffff;
+    color: var(--text);
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
     cursor: pointer;
 }
 
