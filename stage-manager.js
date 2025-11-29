@@ -32,6 +32,12 @@ function createSingleItem(id, src, type, x, y) {
     el.style.width = '160px';
     el.draggable = false;
 
+    // Apply default flip for pink horn
+    if (src.includes('horn.png')) {
+        el.dataset.flip = 'true';
+        el.style.transform = 'scaleX(-1)';
+    }
+
     el.style.left = (x - 80) + 'px';
     el.style.top = (y - 80) + 'px';
 
@@ -45,12 +51,17 @@ function createSingleItem(id, src, type, x, y) {
 }
 
 function createWingPair(id, src, x, y) {
+    // Determine default flip. Standard wings are flipped by default.
+    // Dragon wings (bat wings) are specifically requested to be flipped relative to standard (i.e. not flipped).
+    const isDragon = src.includes('wing_dragon.png');
+    const shouldFlip = !isDragon;
+
     const backEl = document.createElement('img');
     backEl.src = src;
     backEl.className = `stage-item z-back wing-back`;
     backEl.dataset.id = id;
     backEl.dataset.isBack = 'true';
-    backEl.dataset.flip = 'true';
+    backEl.dataset.flip = String(shouldFlip);
     backEl.dataset.type = 'wing';
     backEl.style.width = '200px';
     backEl.draggable = false;
@@ -61,7 +72,7 @@ function createWingPair(id, src, x, y) {
     frontEl.className = `stage-item z-front`;
     frontEl.dataset.id = id;
     frontEl.dataset.isMaster = 'true';
-    frontEl.dataset.flip = 'true';
+    frontEl.dataset.flip = String(shouldFlip);
     frontEl.dataset.type = 'wing';
     frontEl.style.width = '200px';
     frontEl.draggable = false;
@@ -78,8 +89,10 @@ function createWingPair(id, src, x, y) {
     backEl.style.left = (initLeft + 40) + 'px';
     backEl.style.top = (initTop - 20) + 'px';
 
-    frontEl.style.transform = 'scaleX(-1)';
-    backEl.style.transform = 'scaleX(-1)';
+    if (shouldFlip) {
+        frontEl.style.transform = 'scaleX(-1)';
+        backEl.style.transform = 'scaleX(-1)';
+    }
 
     const backBaseZ = 5;
     const frontBaseZ = 20;
@@ -105,6 +118,32 @@ export function selectElement(el) {
     if (el) {
         el.classList.add('selected');
     }
+}
+
+export function flipSelected() {
+    const selectedEl = getSelectedEl();
+    if (!selectedEl) return;
+
+    const id = selectedEl.dataset.id;
+    const itemStruct = state.items.find(i => i.id == id);
+    if (!itemStruct) return;
+
+    itemStruct.els.forEach(el => {
+        const currentFlip = el.dataset.flip === 'true';
+        const newFlip = !currentFlip;
+        
+        el.dataset.flip = String(newFlip);
+
+        // Update transform preserving translation
+        const x = parseFloat(el.getAttribute('data-x')) || 0;
+        const y = parseFloat(el.getAttribute('data-y')) || 0;
+        
+        let transform = `translate(${x}px, ${y}px)`;
+        if (newFlip) {
+            transform += ' scaleX(-1)';
+        }
+        el.style.transform = transform;
+    });
 }
 
 export function deleteItem(id) {

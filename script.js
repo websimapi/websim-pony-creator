@@ -1,6 +1,6 @@
 import { processBasePony } from './image-utils.js';
 import { setupPaletteInteractions } from './interaction-handlers.js';
-import { clearAll, adjustZForSelected } from './stage-manager.js';
+import { clearAll, adjustZForSelected, flipSelected } from './stage-manager.js';
 
 // Configuration
 const BASE_PONY_SRC = '/base-pony.jpeg';
@@ -29,6 +29,7 @@ async function init() {
 
     document.getElementById('z-up').addEventListener('click', () => adjustZForSelected(1));
     document.getElementById('z-down').addEventListener('click', () => adjustZForSelected(-1));
+    document.getElementById('flip-btn').addEventListener('click', flipSelected);
 }
 
 init();
