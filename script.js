@@ -89,6 +89,12 @@ function processBasePony(src) {
 // Interactions
 // ---------------------------------------------------------
 
+function setupStageInteractions() {
+    // Currently no pre-existing items on stage at load,
+    // but this function is here to avoid runtime errors
+    // and can be extended later if needed.
+}
+
 function setupPaletteInteractions() {
     const paletteItems = document.querySelectorAll('.palette-item');
 
