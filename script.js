@@ -4,7 +4,7 @@ import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spa
 import { state } from './state.js';
 
 // Configuration
-const BASE_PONY_SRC = '/base-pony.jpeg';
+const BASE_PONY_SRC = '/base_pony_white.png';
 
 // Setup Delete Zone
 const DELETE_ZONE = document.createElement('div');
