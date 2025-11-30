@@ -92,7 +92,7 @@ export function prepareHitmap(src) {
     return promise;
 }
 
-export async function getWingSnapDefinition(basePonySrc, wingSrc) {
+async function getSnapDefinition(basePonySrc, assetSrc) {
     const hitmap = await prepareHitmap(basePonySrc);
     if (!hitmap || !hitmap.data || hitmap.width === 0) {
         return { x: 0.5, y: 0.5, ratio: 1 };
@@ -108,17 +108,17 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
         baseFilename = basePonySrc.substring(basePonySrc.lastIndexOf('/') + 1);
     }
 
-    const wingFilename = wingSrc
-        ? wingSrc.substring(wingSrc.lastIndexOf('/') + 1)
+    const assetFilename = assetSrc
+        ? assetSrc.substring(assetSrc.lastIndexOf('/') + 1)
         : null;
 
-    const baseCalib = wingFilename && state.calibrationData[baseFilename]
-        ? state.calibrationData[baseFilename][wingFilename]
+    const baseCalib = assetFilename && state.calibrationData[baseFilename]
+        ? state.calibrationData[baseFilename][assetFilename]
         : null;
 
     const ratio = hitmap.width / hitmap.height;
 
-    // If we have calibration data for this base+wing, use it directly
+    // If we have calibration data for this base+asset, use it directly
     if (baseCalib && typeof baseCalib.x === 'number' && typeof baseCalib.y === 'number') {
         return {
             x: baseCalib.x,
@@ -129,7 +129,7 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
         };
     }
 
-    // Fallback: automatic estimation using center column scan on the base pony
+    // Fallback for wings: automatic estimation using center column scan on the base pony
     const cx = Math.floor(hitmap.width / 2);
     let topY = -1;
     let bottomY = -1;
@@ -168,6 +168,14 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
         scale: 1
     };
 }
+
+// Backward-compatible wrapper for existing wing code
+export async function getWingSnapDefinition(basePonySrc, wingSrc) {
+    return getSnapDefinition(basePonySrc, wingSrc);
+}
+
+// Expose generic snap function for all accessories
+export { getSnapDefinition };
 
 export function isOpaqueAtElement(el, clientX, clientY) {
     const src = el.src;

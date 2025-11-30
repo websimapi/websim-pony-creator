@@ -197,11 +197,11 @@ async function init() {
             setTimeout(() => item.style.transform = '', 100);
 
             // Logic: 
-            // Wings/Horns: Try to replace first. If not found, spawn.
-            // Marks: Always spawn (allow multiple).
+            // Wings: Try to replace first. If not found, spawn.
+            // Horns/Marks: Always spawn (allow multiple, unique positions).
             let replaced = false;
 
-            if (type === 'wing' || type === 'horn') {
+            if (type === 'wing') {
                 replaced = await replaceFirstItemOfType(type, src);
             }
 

@@ -1,6 +1,6 @@
 import interact from 'interactjs';
 import { isOpaqueAtElement, getTopItemAt } from './image-utils.js';
-import { spawnItem, selectElement, deleteItem, moveItem, updateWingCalibration, applyItemTransform } from './stage-manager.js';
+import { spawnItem, selectElement, deleteItem, moveItem, updateItemCalibration, applyItemTransform } from './stage-manager.js';
 import { getWingDefaultFlip, state } from './state.js';
 
 export function setupPaletteInteractions() {
@@ -246,10 +246,8 @@ export function setupStageInteractions() {
                     }
                 }
 
-                // Update calibration if needed
-                if (data.type === 'wing') {
-                    updateWingCalibration(data.targetEl);
-                }
+                // Update calibration for this item (wings, horns, hair, marks, etc.)
+                updateItemCalibration(data.targetEl);
             }
         }
     })

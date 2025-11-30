@@ -1,5 +1,5 @@
 import { state, getNextId, getSelectedEl, setSelectedEl, getWingDefaultFlip } from './state.js';
-import { prepareHitmap, getWingSnapDefinition } from './image-utils.js';
+import { prepareHitmap, getWingSnapDefinition, getSnapDefinition } from './image-utils.js';
 
 export const STAGE = document.getElementById('stage');
 
@@ -82,6 +82,74 @@ export function updateWingCalibration(wingEl) {
 
     // Find the itemStruct to also grab rotation/scale
     const id = wingEl.dataset.id;
+    const itemStruct = state.items.find(i => i.id == id);
+
+    state.calibrationData[baseFilename][filename] = {
+        x: Number(normX.toFixed(4)),
+        y: Number(normY.toFixed(4)),
+        rotation: itemStruct ? Number((itemStruct.rotation || 0).toFixed(2)) : 0,
+        scale: itemStruct ? Number((itemStruct.scale || 1).toFixed(2)) : 1
+    };
+    
+    console.log(`Updated calibration for ${baseFilename} -> ${filename}`, state.calibrationData[baseFilename][filename]);
+}
+
+export function updateItemCalibration(itemEl) {
+    if (!state.currentBasePonySrc) return;
+    
+    // Extract filenames for cleaner JSON keys
+    const src = itemEl.src;
+    const filename = src.substring(src.lastIndexOf('/') + 1);
+    const baseFilename = state.currentBasePonySrc.substring(state.currentBasePonySrc.lastIndexOf('/') + 1);
+
+    // Calculate center of the element relative to stage
+    const rect = itemEl.getBoundingClientRect();
+    const stageRect = STAGE.getBoundingClientRect();
+    
+    const centerX = rect.left + rect.width / 2 - stageRect.left;
+    const centerY = rect.top + rect.height / 2 - stageRect.top;
+
+    // Normalize coordinates against the rendered base pony image
+    const ponyImg = document.getElementById('base-pony');
+    if (!ponyImg) return;
+
+    // Stage dimensions (responsive)
+    const stageW = STAGE.clientWidth || 700;
+    const stageH = STAGE.clientHeight || 700;
+    
+    // Determine how the pony image is fitted in the stage
+    const naturalW = ponyImg.naturalWidth || 1000;
+    const naturalH = ponyImg.naturalHeight || 1000;
+    const naturalRatio = naturalW / naturalH;
+    const stageRatio = stageW / stageH;
+
+    let renderW, renderH, offsetX, offsetY;
+
+    if (naturalRatio > stageRatio) {
+        // Landscape fit
+        renderW = stageW;
+        renderH = stageW / naturalRatio;
+        offsetX = 0;
+        offsetY = (stageH - renderH) / 2;
+    } else {
+        // Portrait fit
+        renderH = stageH;
+        renderW = stageH * naturalRatio;
+        offsetY = 0;
+        offsetX = (stageW - renderW) / 2;
+    }
+
+    // Calculate normalized position (0.0 to 1.0) relative to the image content
+    const normX = (centerX - offsetX) / renderW;
+    const normY = (centerY - offsetY) / renderH;
+
+    // Store in state
+    if (!state.calibrationData[baseFilename]) {
+        state.calibrationData[baseFilename] = {};
+    }
+
+    // Find the itemStruct to also grab rotation/scale
+    const id = itemEl.dataset.id;
     const itemStruct = state.items.find(i => i.id == id);
 
     state.calibrationData[baseFilename][filename] = {
@@ -256,10 +324,33 @@ export async function spawnItem(src, type, x, y) {
         );
     } else {
         const rect = STAGE.getBoundingClientRect();
-        // Relative position to stage
-        const stageX = x - rect.left;
-        const stageY = y - rect.top;
-        createSingleItem(id, src, type, stageX, stageY);
+
+        const basePony = document.getElementById('base-pony');
+        let stageX;
+        let stageY;
+        let initialRotation = 0;
+        let initialScale = 1;
+
+        if (basePony) {
+            const snap = await getSnapDefinition(basePony.src, src);
+            if (snap && typeof snap.x === 'number' && typeof snap.y === 'number') {
+                const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
+                stageX = coords.x;
+                stageY = coords.y;
+                initialRotation = typeof snap.rotation === 'number' ? snap.rotation : 0;
+                initialScale = typeof snap.scale === 'number' ? snap.scale : 1;
+            } else {
+                // Fallback: use drop position
+                stageX = x - rect.left;
+                stageY = y - rect.top;
+            }
+        } else {
+            // Fallback if base pony missing
+            stageX = x - rect.left;
+            stageY = y - rect.top;
+        }
+
+        createSingleItem(id, src, type, stageX, stageY, initialRotation, initialScale);
     }
 }
 
@@ -281,7 +372,7 @@ export function moveItem(id, dx, dy) {
     applyItemTransform(itemStruct);
 }
 
-function createSingleItem(id, src, type, x, y) {
+function createSingleItem(id, src, type, x, y, initialRotation = 0, initialScale = 1) {
     const el = document.createElement('img');
     el.src = src;
     el.className = `stage-item z-front`;
@@ -307,7 +398,18 @@ function createSingleItem(id, src, type, x, y) {
 
     STAGE.appendChild(el);
 
-    state.items.push({ id, type, els: [el], baseZ, zOffset: 0, rotation: 0, scale: 1 });
+    const itemStruct = {
+        id,
+        type,
+        els: [el],
+        baseZ,
+        zOffset: 0,
+        rotation: initialRotation,
+        scale: initialScale
+    };
+
+    state.items.push(itemStruct);
+    applyItemTransform(itemStruct);
 }
 
 function createWingPair(id, src, x, y, initialRotation = 0, initialScale = 1) {
