@@ -123,7 +123,9 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
         return {
             x: baseCalib.x,
             y: baseCalib.y,
-            ratio
+            ratio,
+            rotation: typeof baseCalib.rotation === 'number' ? baseCalib.rotation : 0,
+            scale: typeof baseCalib.scale === 'number' ? baseCalib.scale : 1
         };
     }
 
@@ -161,7 +163,9 @@ export async function getWingSnapDefinition(basePonySrc, wingSrc) {
     return {
         x: targetXPixel / hitmap.width,
         y: targetYPixel / hitmap.height,
-        ratio
+        ratio,
+        rotation: 0,
+        scale: 1
     };
 }
 

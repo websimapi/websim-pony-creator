@@ -45,9 +45,9 @@ export function updateWingCalibration(wingEl) {
     const ponyImg = document.getElementById('base-pony');
     if (!ponyImg) return;
 
-    // Stage dimensions (fixed)
-    const stageW = 700;
-    const stageH = 700;
+    // Stage dimensions (responsive)
+    const stageW = STAGE.clientWidth || 700;
+    const stageH = STAGE.clientHeight || 700;
     
     // Determine how the pony image is fitted in the stage
     const naturalW = ponyImg.naturalWidth || 1000;
@@ -158,9 +158,9 @@ export async function replaceFirstItemOfType(type, newSrc) {
 }
 
 function getStageCoordinates(normX, normY, naturalRatio) {
-    // STAGE is 700x700
-    const stageW = 700;
-    const stageH = 700;
+    // Stage dimensions (responsive)
+    const stageW = STAGE.clientWidth || 700;
+    const stageH = STAGE.clientHeight || 700;
     const stageRatio = stageW / stageH;
     
     // The image is fit with object-fit: contain inside the stage
@@ -211,9 +211,6 @@ export async function repositionWings(basePonySrc) {
 
             frontEl.style.left = left + 'px';
             frontEl.style.top = top + 'px';
-            // Reset transform translation, keep flip but reset rotation/scale
-            wingItem.rotation = 0;
-            wingItem.scale = 1;
             frontEl.setAttribute('data-x', 0);
             frontEl.setAttribute('data-y', 0);
         }
@@ -230,6 +227,10 @@ export async function repositionWings(basePonySrc) {
             backEl.setAttribute('data-y', 0);
         }
 
+        // Apply calibrated rotation/scale if present
+        wingItem.rotation = typeof snap.rotation === 'number' ? snap.rotation : 0;
+        wingItem.scale = typeof snap.scale === 'number' ? snap.scale : 1;
+
         // Apply shared transform for both elements
         applyItemTransform(wingItem);
     });
@@ -245,7 +246,14 @@ export async function spawnItem(src, type, x, y) {
         const snap = await getWingSnapDefinition(basePony.src, src);
         const coords = getStageCoordinates(snap.x, snap.y, snap.ratio);
         
-        createWingPair(id, src, coords.x, coords.y);
+        createWingPair(
+            id,
+            src,
+            coords.x,
+            coords.y,
+            typeof snap.rotation === 'number' ? snap.rotation : 0,
+            typeof snap.scale === 'number' ? snap.scale : 1
+        );
     } else {
         const rect = STAGE.getBoundingClientRect();
         // Relative position to stage
@@ -302,7 +310,7 @@ function createSingleItem(id, src, type, x, y) {
     state.items.push({ id, type, els: [el], baseZ, zOffset: 0, rotation: 0, scale: 1 });
 }
 
-function createWingPair(id, src, x, y) {
+function createWingPair(id, src, x, y, initialRotation = 0, initialScale = 1) {
     // Determine default flip per asset using centralized settings
     const shouldFlip = getWingDefaultFlip(src);
 
@@ -344,10 +352,6 @@ function createWingPair(id, src, x, y) {
     frontEl.setAttribute('data-x', 0);
     frontEl.setAttribute('data-y', 0);
 
-    if (shouldFlip) {
-        // flip handled via applyItemTransform
-    }
-
     const backBaseZ = 5;
     const frontBaseZ = 20;
     frontEl.style.zIndex = String(frontBaseZ);
@@ -356,7 +360,15 @@ function createWingPair(id, src, x, y) {
     STAGE.appendChild(backEl);
     STAGE.appendChild(frontEl);
 
-    const itemStruct = { id, type: 'wing', els: [frontEl, backEl], baseZ: 15, zOffset: 0, rotation: 0, scale: 1 };
+    const itemStruct = {
+        id,
+        type: 'wing',
+        els: [frontEl, backEl],
+        baseZ: 15,
+        zOffset: 0,
+        rotation: initialRotation,
+        scale: initialScale
+    };
     state.items.push(itemStruct);
     applyItemTransform(itemStruct);
 }

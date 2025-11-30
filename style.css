@@ -63,8 +63,10 @@ body, html {
 
 #stage {
     position: relative;
-    width: 700px; /* doubled size */
-    height: 700px;
+    /* width: 700px;  doubled size */
+    /* height: 700px; */
+    width: min(700px, 100vw, calc(100vh - 180px));
+    height: min(700px, 100vw, calc(100vh - 180px));
     user-select: none;
     touch-action: none; /* Important for pointer events */
 }

@@ -6,30 +6,42 @@ export const state = {
     calibrationData: {
         "base-pony.jpeg": {
             "wing.png": {
-                "x": 0.3158,
-                "y": 0.6062
+                "x": 0.5985,
+                "y": 0.6779,
+                "rotation": 0,
+                "scale": 1
             },
             "wing_dragon.png": {
-                "x": 0.3502,
-                "y": 0.4119
+                "x": 0.6828,
+                "y": 0.3429,
+                "rotation": 0,
+                "scale": 1
             },
             "wing_butterfly.png": {
-                "x": 0.3262,
-                "y": 0.4543
+                "x": 0.6134,
+                "y": 0.4484,
+                "rotation": 0,
+                "scale": 1
             }
         },
         "base_pony_white.png": {
             "wing.png": {
-                "x": 0.2959,
-                "y": 0.6011
+                "x": 0.6008,
+                "y": 0.6689,
+                "rotation": 0,
+                "scale": 1
             },
             "wing_dragon.png": {
-                "x": 0.3354,
-                "y": 0.3696
+                "x": 0.6553,
+                "y": 0.2982,
+                "rotation": 0,
+                "scale": 1
             },
             "wing_butterfly.png": {
-                "x": 0.3312,
-                "y": 0.4173
+                "x": 0.5952,
+                "y": 0.3715,
+                "rotation": 0,
+                "scale": 1
             }
         }
     },
