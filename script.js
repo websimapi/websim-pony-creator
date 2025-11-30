@@ -1,4 +1,4 @@
-import { processBasePony } from './image-utils.js';
+import { processBasePony, prepareHitmap } from './image-utils.js';
 import { setupPaletteInteractions, setupStageInteractions } from './interaction-handlers.js';
 import { clearAll, adjustZForSelected, flipSelected, replaceFirstItemOfType, spawnItem, STAGE, repositionWings, logCalibrationData } from './stage-manager.js';
 import { state } from './state.js';
@@ -135,6 +135,28 @@ async function init() {
         transformHandle.style.cursor = 'grab';
     });
 
+    // Pre-warm assets so first use is fast
+    function prewarmAssets() {
+        // Pre-warm hitmaps for all palette items (wings, horns, marks, etc.)
+        const allPaletteItems = document.querySelectorAll('.palette-item');
+        allPaletteItems.forEach(img => {
+            // Fire-and-forget; don't block UI
+            prepareHitmap(img.src).catch(err => {
+                console.warn('Hitmap warmup failed for', img.src, err);
+            });
+        });
+
+        // Also pre-process all base ponies so switching between them is instant
+        const baseItems = document.querySelectorAll('.palette-item[data-type="base"]');
+        baseItems.forEach(item => {
+            const src = item.getAttribute('src');
+            // processBasePony is cheap for PNGs and needed for JPEG bases
+            processBasePony(src).catch(err => {
+                console.warn('Base pony preprocessing failed for', src, err);
+            });
+        });
+    }
+
     const loadBase = async (src) => {
         state.currentBasePonySrc = src;
         try {
@@ -151,6 +173,8 @@ async function init() {
 
     // Initial load
     await loadBase(BASE_PONY_SRC);
+    // Kick off pre-warm after initial base load so subsequent actions are snappy
+    prewarmAssets();
 
     // Setup interactions for drag/drop items
     setupPaletteInteractions();
